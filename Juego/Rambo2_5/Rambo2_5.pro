@@ -9,14 +9,19 @@ CONFIG += c++17
 SOURCES += \
     entidad.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    proyectil.cpp \
+    rambo.cpp
 
 HEADERS += \
     entidad.h \
     mainwindow.h \
     modelofisico.h \
+    modelooscilatorio.h \
     modeloparabolico.h \
-    modelorebote.h
+    modelorebote.h \
+    proyectil.h \
+    rambo.h
 
 FORMS += \
     mainwindow.ui
