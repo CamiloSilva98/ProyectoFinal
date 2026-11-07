@@ -11,7 +11,8 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     proyectil.cpp \
-    rambo.cpp
+    rambo.cpp \
+    suministro.cpp
 
 HEADERS += \
     entidad.h \
@@ -21,7 +22,8 @@ HEADERS += \
     modeloparabolico.h \
     modelorebote.h \
     proyectil.h \
-    rambo.h
+    rambo.h \
+    suministro.h
 
 FORMS += \
     mainwindow.ui
