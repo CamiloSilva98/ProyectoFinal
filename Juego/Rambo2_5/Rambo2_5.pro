@@ -13,6 +13,8 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     nivel.cpp \
+    nivel2.cpp \
+    policia.cpp \
     proyectil.cpp \
     rambo.cpp \
     suministro.cpp
@@ -27,6 +29,8 @@ HEADERS += \
     modeloparabolico.h \
     modelorebote.h \
     nivel.h \
+    nivel2.h \
+    policia.h \
     proyectil.h \
     rambo.h \
     suministro.h

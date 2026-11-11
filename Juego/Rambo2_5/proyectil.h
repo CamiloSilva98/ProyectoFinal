@@ -10,11 +10,12 @@ class Proyectil : public entidad
 private:
     float velocidadX;
     float velocidadY;
-    int dano;
+    int daño;
     int rebotesMax;
     int rebotesHechos;
-    ModeloFisico *modelo;   // movimiento, no es dueno
-    ModeloRebote *rebote;   // puede ser nullptr si no rebota, no es dueno
+    ModeloFisico *modelo;   // movimiento, no es dueño
+    ModeloRebote *rebote;   // puede ser nullptr si no rebota, no es dueño
+    bool deRambo;
 
 public:
     Proyectil(float x, float y, float vx, float vy, int dano,
@@ -24,7 +25,9 @@ public:
     void mover(float dt);
     void colisionar(float nx, float ny);
 
-    int getDano() const;
+    int getDaño() const;
+    void setDeRambo(bool valor);
+    bool esDeRambo() const;
     float getVelocidadX() const;
     float getVelocidadY() const;
 };
