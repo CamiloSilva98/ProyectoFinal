@@ -96,3 +96,11 @@ int Rambo::getMunicion() const { return municion; }
 float Rambo::getVelocidad() const { return velocidad; }
 void Rambo::setVelocidad(float v) { velocidad = v; }
 
+// devuelve true si el suministro todavia estaba disponible y se aplico
+bool Rambo::recogerSuministro(Suministro &suministro)
+{
+    if (!suministro.estaViva()) return false;
+    suministro.aplicarA(*this);
+    return true;
+}
+
