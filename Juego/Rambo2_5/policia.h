@@ -18,7 +18,7 @@ private:
     float tiempoAtaque;
     float velocidadBombaX;
     float velocidadBombaY;
-    int dañoBomba;
+    int danoBomba;
 
 public:
     Policia(float x, float y, int salud, float velocidad,
