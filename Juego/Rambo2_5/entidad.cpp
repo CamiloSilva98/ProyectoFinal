@@ -1,7 +1,8 @@
 #include "entidad.h"
 
-entidad::entidad(float x, float y, int salud)
-    : x(x), y(y), salud(salud){}
+
+entidad::entidad(float x, float y, int salud, float radio)
+    : x(x), y(y), salud(salud), radio(radio){}
 
 entidad::~entidad(){}
 
@@ -15,6 +16,14 @@ void entidad::recibirDano(int dano)
 float entidad::getX() const { return x; }
 
 float entidad::getY() const { return y; }
+
+float entidad::getRadio() const { return radio; }
+
+void entidad::setPosicion(float nuevoX, float nuevoY)
+{
+    x = nuevoX;
+    y = nuevoY;
+}
 
 int entidad::getSalud() const { return salud; }
 

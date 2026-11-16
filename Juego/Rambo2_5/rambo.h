@@ -26,8 +26,18 @@ private:
     float tiempoDisparo;    // tiempo desde el ultimo disparo
     float factorFatiga;     // entre 0 y 1, cuanto afecta la fatiga
 
+    //para el nivel 1 :D
+    int piedras;
+    bool corriendo;
+    bool acechador;
+    bool enCobertura;
+    bool movio;
+    float tiempoQuieto;
+    float tiempoRuido;
+    bool ruidoPendiente;
+
 public:
-    Rambo(float x, float y, int salud, int municion, float velocidad);
+    Rambo(float x, float y, int salud, int municion, float velocidad, float radio = 0.0f);
 
     void actualizar(float dt) override;
     void mover(float dirX, float dirY, float dt);
@@ -43,6 +53,14 @@ public:
     float getVelocidadEfectiva() const;
     float getIntervaloDisparo() const;
     void setParametrosFatiga(float maxima, float tasa, float costo, float factor);
+    void setCorriendo(bool valor);
+    bool estaCorriendo() const;
+    void setEnCobertura(bool valor);
+    bool estaAcechando() const;
+    bool consumirRuido();
+    bool lanzarPiedra();
+    void agregarPiedras(int cantidad);
+    int getPiedras() const;
 
     int getMunicion() const;
     float getVelocidad() const;

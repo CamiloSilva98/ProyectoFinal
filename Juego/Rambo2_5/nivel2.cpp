@@ -174,7 +174,7 @@ void Nivel2::resolverColisiones()
                     Policia *pol = dynamic_cast<Policia*>(entidades[j]);
                     if (pol == nullptr || !pol->estaViva()) continue;
                     if (cerca(*p, *pol)) {
-                        pol->recibirDano(p->getDaño());
+                        pol->recibirDano(p->getDano());
                         p->recibirDano(1);
                         if (!pol->estaViva()) soltarSuministro(pol->getX(), pol->getY());
                     }
@@ -183,7 +183,7 @@ void Nivel2::resolverColisiones()
             else if (cerca(*p, *rambo))
             {
                 // bombas y disparos del arma dañan a rambo
-                rambo->recibirDano(p->getDaño());
+                rambo->recibirDano(p->getDano());
                 p->recibirDano(1);
             }
 

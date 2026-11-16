@@ -10,7 +10,7 @@ class Proyectil : public entidad
 private:
     float velocidadX;
     float velocidadY;
-    int daño;
+    int dano;
     int rebotesMax;
     int rebotesHechos;
     ModeloFisico *modelo;   // movimiento, no es dueño
@@ -25,7 +25,7 @@ public:
     void mover(float dt);
     void colisionar(float nx, float ny);
 
-    int getDaño() const;
+    int getDano() const;
     void setDeRambo(bool valor);
     bool esDeRambo() const;
     float getVelocidadX() const;

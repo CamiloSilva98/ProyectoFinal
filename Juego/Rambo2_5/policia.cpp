@@ -7,7 +7,7 @@ Policia::Policia(float x, float y, int salud, float velocidad,
                  entidad *objetivo, Nivel *nivel, ModeloFisico *modeloBomba)
     : Enemigo(x, y, salud, velocidad), objetivo(objetivo), nivel(nivel),
     modeloBomba(modeloBomba), rangoAtaque(600.0f), intervaloAtaque(2.0f),
-    tiempoAtaque(0.0f), velocidadBombaX(250.0f), velocidadBombaY(300.0f), dañoBomba(15)
+    tiempoAtaque(0.0f), velocidadBombaX(250.0f), velocidadBombaY(300.0f), danoBomba(15)
 {
 }
 
@@ -41,7 +41,7 @@ void Policia::atacar(entidad &blanco)
 
     float dir = (blanco.getX() >= x) ? 1.0f : -1.0f;
     nivel->agregarEntidad(new Proyectil(x, y, dir * velocidadBombaX, -velocidadBombaY,
-                                        dañoBomba, modeloBomba));
+                                        danoBomba, modeloBomba));
     tiempoAtaque = 0.0f;
 }
 
@@ -51,5 +51,5 @@ void Policia::setParametrosAtaque(float rango, float intervalo, float velX, floa
     intervaloAtaque = intervalo;
     velocidadBombaX = velX;
     velocidadBombaY = velY;
-    dañoBomba = dano;
+    danoBomba = dano;
 }

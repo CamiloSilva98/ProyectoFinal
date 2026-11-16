@@ -1,8 +1,8 @@
 #include "proyectil.h"
 
-Proyectil::Proyectil(float x, float y, float vx, float vy, int daño,
+Proyectil::Proyectil(float x, float y, float vx, float vy, int dano,
                      ModeloFisico *modelo, ModeloRebote *rebote, int rebotesMax)
-    : entidad(x, y, 1), velocidadX(vx), velocidadY(vy), daño(daño),
+    : entidad(x, y, 1), velocidadX(vx), velocidadY(vy), dano(dano),
     rebotesMax(rebotesMax), rebotesHechos(0), modelo(modelo), rebote(rebote), deRambo(false){}
 
 void Proyectil::actualizar(float dt)
@@ -29,7 +29,7 @@ void Proyectil::colisionar(float nx, float ny)
     rebotesHechos++;
 }
 
-int Proyectil::getDaño() const { return daño; }
+int Proyectil::getDano() const { return dano; }
 float Proyectil::getVelocidadX() const { return velocidadX; }
 float Proyectil::getVelocidadY() const { return velocidadY; }
 
