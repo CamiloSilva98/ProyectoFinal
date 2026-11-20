@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/sprites">
+        <file>recursos/sprites/rambo_sprites.png</file>
+        <file>recursos/sprites/items.png</file>
+        <file>recursos/sprites/bala.png</file>
+    </qresource>
+</RCC>
