@@ -17,7 +17,7 @@ static bool cerca(const entidad &a, const entidad &b)
 Nivel2::Nivel2(float ancho, float alto, float ySuelo)
     : Nivel(0.0f), anchoNivel(ancho), altoNivel(alto), ySuelo(ySuelo),
     rambo(nullptr), arma(nullptr),
-    modeloSalto(600.0f), modeloBala(150.0f), modeloBomba(500.0f),
+    modeloSalto(600.0f), modeloBala(0.0f), modeloBomba(500.0f),
     reboteBala(0.5f), oscilador(0.6f, 1.5f),
     numeroHorda(1), tiempoHorda(0.0f), tiempoSpawn(0.0f),
     generando(false), ladoSpawn(false),

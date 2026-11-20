@@ -5,6 +5,7 @@
 #include <QSet>
 #include <QTimer>
 #include "nivel2.h"
+#include <QPixmap>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -30,6 +31,14 @@ private:
     QTimer *timer;
     QSet<int> teclas;
     float direccion;
+    QPixmap spritesRambo;
+    float tiempoAnim;
+    float tiempoHerido;
+    int saludAnterior;
+    QPixmap spriteEnergia;
+    QPixmap spriteBala;
+    float tiempoItems;
+    int frameRambo() const;
     void actualizarJuego();
 };
 #endif // MAINWINDOW_H
