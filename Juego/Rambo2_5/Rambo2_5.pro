@@ -15,7 +15,11 @@ SOURCES += \
     enemigo.cpp \
     entidad.cpp \
     extintor.cpp \
+    gestorjuego.cpp \
     guardia.cpp \
+    itemfigura.cpp \
+    itemguardia.cpp \
+    itemrambo.cpp \
     main.cpp \
     mainwindow.cpp \
     nivel.cpp \
@@ -43,7 +47,11 @@ HEADERS += \
     entidad.h \
     estimulo.h \
     extintor.h \
+    gestorjuego.h \
     guardia.h \
+    itemfigura.h \
+    itemguardia.h \
+    itemrambo.h \
     mainwindow.h \
     modeloarrastre.h \
     modelofisico.h \
