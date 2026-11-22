@@ -1,12 +1,12 @@
 #include "agenteguardia.h"
 #include "nivel1.h"
 
-static const float VELOCIDAD_DETECCION = 0.7f;
 static const float VELOCIDAD_OLVIDO = 0.3f;
 static const float FACTOR_ACECHADOR = 0.4f;
 
-AgenteGuardia::AgenteGuardia(Guardia *guardia, Nivel1 *nivel, std::size_t memoria)
-    : guardia(guardia), nivel(nivel), percepcion(nivel), aprendizaje(memoria)
+AgenteGuardia::AgenteGuardia(Guardia *guardia, Nivel1 *nivel, std::size_t memoria, float velocidadDeteccion)
+    : guardia(guardia), nivel(nivel), percepcion(nivel), aprendizaje(memoria),
+    velocidadDeteccion(velocidadDeteccion)
 {
 }
 
@@ -22,7 +22,7 @@ void AgenteGuardia::actualizar(float dt)
 
     if (veARambo)
     {
-        float velocidad = VELOCIDAD_DETECCION;
+        float velocidad = velocidadDeteccion;
         if (nivel->getRambo()->estaAcechando()) velocidad *= FACTOR_ACECHADOR;
         guardia->subirDeteccion(velocidad * dt);
     }

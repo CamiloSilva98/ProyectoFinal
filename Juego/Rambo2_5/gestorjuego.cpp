@@ -22,7 +22,7 @@ static const int CUADROS_ENERGIA = 12;
 static const float FACTOR_ALCANCE_EN_HUMO = 0.4f;
 
 GestorJuego::GestorJuego(QGraphicsScene *escena, QObject *parent)
-    : QObject(parent), escena(escena), pantalla(Pantalla::Menu), nivelActual(1),
+    : QObject(parent), escena(escena), pantalla(Pantalla::Menu), nivelActual(1), dificultad(Dificultad::Normal),
     nivel1(nullptr), nivel2(nullptr), hud(nullptr),
     direccion(1.0f), tiempoAnim(0.0f), tiempoHerido(0.0f), tiempoItems(0.0f), saludAnterior(0)
 {
@@ -89,6 +89,32 @@ void GestorJuego::clic(QPointF punto, Qt::MouseButton boton)
 
     if (boton == Qt::LeftButton) nivel1->dispararFlecha(punto.x(), punto.y());
     else if (boton == Qt::RightButton) nivel1->lanzarPiedra(punto.x(), punto.y());
+}
+
+void GestorJuego::soltarTeclas()
+{
+    teclas.clear();
+}
+
+void GestorJuego::setDificultad(Dificultad nueva)
+{
+    if (nueva == dificultad) return;
+    dificultad = nueva;
+
+    if (pantalla == Pantalla::JugandoNivel1) iniciarNivel1();
+    else if (pantalla == Pantalla::Menu) mostrarMenu();
+}
+
+Dificultad GestorJuego::getDificultad() const
+{
+    return dificultad;
+}
+
+QString GestorJuego::nombreDificultad(Dificultad dificultad)
+{
+    if (dificultad == Dificultad::Facil) return "Facil";
+    if (dificultad == Dificultad::Dificil) return "Dificil";
+    return "Normal";
 }
 
 void GestorJuego::actualizar()
@@ -173,6 +199,7 @@ void GestorJuego::mostrarMenu()
     agregarTexto("RAMBO", 80, 60, Qt::white);
     agregarTexto("1 o Enter: Nivel 1 (infiltracion)", 240, 24, Qt::white);
     agregarTexto("2: Nivel 2 (hordas)", 285, 24, Qt::white);
+    agregarTexto("Dificultad del Nivel 1: " + nombreDificultad(dificultad) + "  (se cambia en el menu de arriba)", 335, 20, Qt::yellow);
     agregarTexto("Nivel 1:  WASD mover   Shift correr   clic izquierdo flecha   clic derecho piedra", 400, 18, Qt::lightGray);
     agregarTexto("Llega a la zona verde sin que te vean. Los guardias oyen el ruido.", 430, 18, Qt::lightGray);
     agregarTexto("Nivel 2:  A y D mover   Espacio saltar   J disparar", 490, 18, Qt::lightGray);
@@ -185,7 +212,7 @@ void GestorJuego::iniciarNivel1()
     limpiarEscena();
     nivelActual = 1;
 
-    nivel1 = new Nivel1(ANCHO_ESCENA, ALTO_ESCENA);
+    nivel1 = new Nivel1(ANCHO_ESCENA, ALTO_ESCENA, configurarDificultad(dificultad));
     nivel1->iniciar();
 
     escena->setBackgroundBrush(QColor(45, 50, 45));
@@ -363,9 +390,9 @@ void GestorJuego::dibujarNivel1()
     }
 
     Rambo *rambo = nivel1->getRambo();
-    hud->setText(QString("Salud: %1   Flechas: %2   Piedras: %3   Tiempo: %4")
+    hud->setText(QString("Salud: %1   Flechas: %2   Piedras: %3   Tiempo: %4   Dificultad: %5")
                      .arg(rambo->getSalud()).arg(rambo->getMunicion()).arg(rambo->getPiedras())
-                     .arg(static_cast<int>(nivel1->getTiempoRestante())));
+                     .arg(static_cast<int>(nivel1->getTiempoRestante())).arg(nombreDificultad(dificultad)));
 }
 
 void GestorJuego::dibujarNivel2()
