@@ -9,6 +9,25 @@
 #include "modeloparabolico.h"
 #include "modelorebote.h"
 #include "modelooscilatorio.h"
+#include "granada.h"
+
+
+// base donde se puede pararse: borde izquierdo, borde derecho y altura de la superficie
+struct Plataforma
+{
+    float x0;
+    float x1;
+    float y;
+};
+
+// lugar por donde aparece un policia y hasta donde puede caminar en su base
+struct PuntoAparicion
+{
+    float x;
+    float y;
+    float izq;
+    float der;
+};
 
 // parametros de dificultad de una horda
 struct ConfigHorda
@@ -38,10 +57,13 @@ private:
     ModeloParabolico modeloBala;
     ModeloParabolico modeloBomba;
     ModeloRebote reboteBala;
+    ModeloRebote reboteGranada;
     ModeloOscilatorio oscilador;
 
     // hordas
     std::vector<ConfigHorda> hordas;
+    std::vector<Plataforma> plataformas;
+    std::vector<PuntoAparicion> puntos;
     int numeroHorda;       // empieza en 1
     float tiempoHorda;
     float tiempoSpawn;
@@ -61,6 +83,9 @@ private:
     void generarPolicia();
     void soltarSuministro(float px, float py);
     void resolverColisiones();
+    float superficieBajo(float px, float py) const;
+    void resolverPlataformas(float dt);
+    void limitesDeBase(float px, float superficie, float &izq, float &der) const;
 
 public:
     Nivel2(float ancho, float alto, float ySuelo);
@@ -84,6 +109,7 @@ public:
     float getAncho() const;
     float getAlto() const;
     float getYSuelo() const;
+    const std::vector<Plataforma> &getPlataformas() const;
 };
 
 #endif

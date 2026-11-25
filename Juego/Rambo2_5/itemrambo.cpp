@@ -3,17 +3,15 @@
 
 static const int ANCHO_CUADRO = 32;
 static const int ALTO_CUADRO = 42;
-static const float ESCALA = 1.5f;
 
-ItemRambo::ItemRambo(const QPixmap &tira, int cuadro, bool mirandoIzquierda)
-    : tira(tira), cuadro(cuadro), mirandoIzquierda(mirandoIzquierda)
-{
-}
+ItemRambo::ItemRambo(const QPixmap &tira, int cuadro, bool mirandoIzquierda, float escala)
+    : tira(tira), cuadro(cuadro), mirandoIzquierda(mirandoIzquierda), escala(escala)
+{}
 
 QRectF ItemRambo::boundingRect() const
 {
-    float ancho = ANCHO_CUADRO * ESCALA;
-    float alto = ALTO_CUADRO * ESCALA;
+    float ancho = ANCHO_CUADRO * escala;
+    float alto = ALTO_CUADRO * escala;
     return QRectF(-ancho / 2, -alto, ancho, alto);
 }
 

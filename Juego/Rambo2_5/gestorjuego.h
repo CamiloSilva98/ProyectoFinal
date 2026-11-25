@@ -71,6 +71,9 @@ private:
     void dibujarNivel1();
     void dibujarNivel2();
     int cuadroRambo() const;
+    void activarCamara();
+    void seguirConCamara();
+    void restablecerCamara();
 };
 
 #endif // GESTORJUEGO_H

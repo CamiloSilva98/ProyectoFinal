@@ -65,6 +65,8 @@ public:
     int getMunicion() const;
     float getVelocidad() const;
     void setVelocidad(float v);
+    void soltarSuelo();
+    void setVelocidadSalto(float v);
 };
 
 #endif
