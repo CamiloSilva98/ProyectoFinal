@@ -23,6 +23,7 @@ public:
     bool estaExplotando() const;
     bool consumirExplosion();       // devuelve true una sola vez, al explotar
     float getRadioExplosion() const;
+    float getProgresoExplosion() const;   // 0 al explotar, 1 al terminar
 };
 
 #endif

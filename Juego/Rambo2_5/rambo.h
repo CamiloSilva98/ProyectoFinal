@@ -67,6 +67,7 @@ public:
     void setVelocidad(float v);
     void soltarSuelo();
     void setVelocidadSalto(float v);
+    void topeTecho(float yMinimo, float altoCuerpo);
 };
 
 #endif

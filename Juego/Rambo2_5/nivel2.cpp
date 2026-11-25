@@ -32,28 +32,28 @@ static bool alcanzaExplosion(const Granada &g, const entidad &cuerpo)
 Nivel2::Nivel2(float ancho, float alto, float ySuelo)
     : Nivel(0.0f), anchoNivel(ancho), altoNivel(alto), ySuelo(ySuelo),
     rambo(nullptr), arma(nullptr),
-    modeloSalto(900.0f), modeloBala(0.0f), modeloBomba(500.0f),
+    modeloSalto(700.0f), modeloBala(0.0f), modeloBomba(500.0f),
     reboteBala(0.5f), reboteGranada(0.45f), oscilador(0.6f, 1.5f),
     numeroHorda(1), tiempoHorda(0.0f), tiempoSpawn(0.0f),
-    generando(false), ladoSpawn(false),
-    intervaloArma(2.0f), tiempoArma(0.0f), probSuministro(35),
+    generando(false),
+    intervaloArma(2.0f), tiempoArma(0.0f), probSuministro(45),
     victoria(false), derrota(false)
 {
     // duracion, intervalo de aparicion, maximo en pantalla, salud, velocidad, intervalo de ataque
-    hordas.push_back({20.0f, 2.5f, 3, 30, 80.0f, 2.5f});
+    hordas.push_back({20.0f, 2.5f, 3, 30, 80.0f, 2.5f});//3,4,6
     hordas.push_back({25.0f, 2.0f, 4, 40, 100.0f, 2.0f});
     hordas.push_back({30.0f, 1.5f, 6, 50, 120.0f, 1.5f});
     // plataformas, medidas segun el fondo actual: balcones arriba y dos bases intermedias
-    plataformas.push_back({0.0f, 330.0f, ySuelo - 310.0f});
-    plataformas.push_back({ancho - 330.0f, ancho, ySuelo - 310.0f});
-    plataformas.push_back({190.0f, 450.0f, ySuelo - 155.0f});
-    plataformas.push_back({ancho - 450.0f, ancho - 190.0f, ySuelo - 155.0f});
+    plataformas.push_back({0.0f, 478.0f, 175.0f});
+    plataformas.push_back({1437.0f, 1916.0f, 175.0f});
+    plataformas.push_back({172.0f, 660.0f, 375.0f});
+    plataformas.push_back({1270.0f, 1745.0f, 375.0f});
 
-    // por donde aparecen los policias: los dos lados del suelo y los dos balcones
-    puntos.push_back({0.0f, ySuelo, 0.0f, ancho});
-    puntos.push_back({ancho, ySuelo, 0.0f, ancho});
-    puntos.push_back({40.0f, ySuelo - 310.0f, 0.0f, 330.0f});
-    puntos.push_back({ancho - 40.0f, ySuelo - 310.0f, ancho - 330.0f, ancho});
+    puntos.clear();
+    puntos.push_back({   0.0f, 745.0f,    0.0f, 1916.0f});   // suelo, lado izquierdo
+    puntos.push_back({1916.0f, 745.0f,    0.0f, 1916.0f});   // suelo, lado derecho
+    puntos.push_back({  40.0f, 175.0f,    0.0f,  478.0f});   // balcon izquierdo
+    puntos.push_back({1876.0f, 175.0f, 1437.0f, 1916.0f});   // balcon derecho
 }
 
 void Nivel2::iniciar()
@@ -67,6 +67,7 @@ void Nivel2::iniciar()
     // el arma cuelga arriba al centro apuntando hacia abajo (pi/2)
     arma = new ArmaOscilante(anchoNivel * 0.5f, 60.0f, 1.5708f, 300.0f, 10, &oscilador, &modeloBomba);
     agregarEntidad(arma);
+    protegerDeLimpieza(rambo);
 
     numeroHorda = 1;
     victoria = false;
@@ -89,6 +90,7 @@ void Nivel2::actualizar(float dt)
     }
 
     actualizarHorda(dt);
+    rambo->topeTecho(0, ALTO_CUERPO);
     resolverPlataformas(dt);
     resolverColisiones();
 
@@ -189,7 +191,7 @@ void Nivel2::soltarSuministro(float px, float py)
 {
     if (std::rand() % 100 >= probSuministro) return;
 
-    TipoSuministro tipo = (std::rand() % 3 == 0) ? TipoSuministro::Energia
+    TipoSuministro tipo = (std::rand() % 2 == 0) ? TipoSuministro::Energia
                                                  : TipoSuministro::Municion;
     int cantidad = (tipo == TipoSuministro::Energia) ? 50 : 25;
     agregarEntidad(new Suministro(px, py, tipo, cantidad));

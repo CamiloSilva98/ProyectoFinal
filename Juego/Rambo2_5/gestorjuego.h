@@ -51,11 +51,14 @@ private:
     QPixmap spritesRambo;
     QPixmap spriteEnergia;
     QPixmap spriteBala;
+    QPixmap spriteMunicion;
+    QPixmap spriteTorreta;
     float direccion;
     float tiempoAnim;
     float tiempoHerido;
     float tiempoItems;
     int saludAnterior;
+    float camX;
 
     void actualizar();
     void actualizarNivel1();
@@ -81,6 +84,8 @@ private:
     void activarCamara();
     void seguirConCamara();
     void restablecerCamara();
+    void agregarCuadro(const QPixmap &tira, int cuadro, int ancho, int alto,
+                       float escala, bool espejo, float x, float y);
 };
 
 #endif // GESTORJUEGO_H

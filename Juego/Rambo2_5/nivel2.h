@@ -68,7 +68,6 @@ private:
     float tiempoHorda;
     float tiempoSpawn;
     bool generando;
-    bool ladoSpawn;        // alterna izquierda y derecha
 
     // arma fija
     float intervaloArma;
