@@ -36,6 +36,7 @@ void Nivel2::iniciar()
     rambo->setSuelo(ySuelo);
     rambo->setModeloSalto(&modeloSalto);
     agregarEntidad(rambo);
+    protegerDeLimpieza(rambo);
 
     // el arma cuelga arriba al centro apuntando hacia abajo (pi/2)
     arma = new ArmaOscilante(anchoNivel * 0.5f, 60.0f, 1.5708f, 300.0f, 10, &oscilador, &modeloBomba);
@@ -235,4 +236,4 @@ Rambo *Nivel2::getRambo() const { return rambo; }
 int Nivel2::getNumeroHorda() const { return numeroHorda; }
 float Nivel2::getAncho() const { return anchoNivel; }
 float Nivel2::getAlto() const { return altoNivel; }
-float Nivel2::getYSuelo() const { return ySuelo; }
+float Nivel2::getYSuelo() const { return ySuelo; }
