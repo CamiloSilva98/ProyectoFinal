@@ -27,12 +27,19 @@ public:
     void teclaPresionada(int tecla);
     void teclaSoltada(int tecla);
     void clic(QPointF punto, Qt::MouseButton boton);
+    void soltarTeclas();
+
+    // solo afecta al nivel 1; si se esta jugando, se reinicia con la nueva
+    void setDificultad(Dificultad nueva);
+    Dificultad getDificultad() const;
+    static QString nombreDificultad(Dificultad dificultad);
 
 private:
     QGraphicsScene *escena;
     QTimer *timer;
     Pantalla pantalla;
     int nivelActual;
+    Dificultad dificultad;
 
     Nivel1 *nivel1;
     Nivel2 *nivel2;

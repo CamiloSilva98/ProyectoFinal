@@ -18,9 +18,10 @@ private:
     Razonamiento razonamiento;
     AccionGuardia accion;
     Aprendizaje aprendizaje;
+    float velocidadDeteccion;
 
 public:
-    AgenteGuardia(Guardia *guardia, Nivel1 *nivel, std::size_t memoria);
+    AgenteGuardia(Guardia *guardia, Nivel1 *nivel, std::size_t memoria, float velocidadDeteccion);
 
     void actualizar(float dt) override;
 

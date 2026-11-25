@@ -2,7 +2,7 @@
 
 Nivel::Nivel(float tiempoLimite)
     : tiempoRestante(tiempoLimite > 0.0f ? tiempoLimite : 0.0f),
-    hayLimiteTiempo(tiempoLimite > 0.0f) {}
+    hayLimiteTiempo(tiempoLimite > 0.0f), protegida(nullptr) {}
 
 Nivel::~Nivel()
 {
@@ -36,12 +36,17 @@ void Nivel::eliminarMuertas()
     std::size_t j = 0;
     for (std::size_t i = 0; i < entidades.size(); ++i)
     {
-        if (entidades[i]->estaViva())
+        if (entidades[i]->estaViva() || entidades[i] == protegida)
             entidades[j++] = entidades[i];
         else
             delete entidades[i];
     }
     entidades.resize(j);
+}
+
+void Nivel::protegerDeLimpieza(entidad *e)
+{
+    protegida = e;
 }
 
 void Nivel::agregarEntidad(entidad *e)

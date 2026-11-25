@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QAction>
 #include <QGraphicsScene>
 #include "gestorjuego.h"
 
@@ -18,6 +19,9 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow() override;
+
+private slots:
+    void cambiarDificultad(QAction *accion);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;

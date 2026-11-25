@@ -11,6 +11,8 @@ protected:
     float tiempoRestante;   // segundos, solo cuenta si hay limite
     bool hayLimiteTiempo;
     std::vector<entidad*> entidades;   // el nivel es dueno de estas entidades
+    entidad *protegida;
+
     // borra de memoria las entidades que ya no estan vivas
     void eliminarMuertas();
 
@@ -36,6 +38,8 @@ public:
     // el nivel pasa a ser dueno de e (se borra al destruir el nivel)
     void agregarEntidad(entidad *e);
 
+    // la entidad se queda en la lista aunque muera, el nivel la sigue consultando
+    void protegerDeLimpieza(entidad *e);
 
     const std::vector<entidad*> &getEntidades() const;
     float getTiempoRestante() const;

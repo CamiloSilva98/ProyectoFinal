@@ -49,6 +49,34 @@ static float limitar(float valor, float minimo, float maximo)
     return valor;
 }
 
+ConfigNivel1 configurarDificultad(Dificultad dificultad)
+{
+    ConfigNivel1 config;
+
+    if (dificultad == Dificultad::Facil)
+    {
+        config.tiempo = 240.0f;
+        config.guardias = 6;
+        config.alcance = 150.0f;
+        config.apertura = 0.8f;
+        config.amplitud = 0.5f;
+        config.frecuencia = 0.8f;
+        config.memoria = 3;
+        config.velocidadDeteccion = 0.5f;
+    }
+    else if (dificultad == Dificultad::Dificil)
+    {
+        config.tiempo = 120.0f;
+        config.alcance = 250.0f;
+        config.apertura = 1.2f;
+        config.amplitud = 1.0f;
+        config.frecuencia = 1.6f;
+        config.memoria = 12;
+        config.velocidadDeteccion = 1.0f;
+    }
+    return config;
+}
+
 Nivel1::Nivel1(float ancho, float alto, ConfigNivel1 config)
     : Nivel(config.tiempo), anchoNivel(ancho), altoNivel(alto), config(config),
     rambo(nullptr), meta({1200.0f, 60.0f, 55.0f}),
@@ -70,6 +98,7 @@ void Nivel1::iniciar()
     rambo->setParametrosFatiga(100.0f, 0.0f, 0.0f, 0.5f);
     rambo->agregarPiedras(config.piedras);
     agregarEntidad(rambo);
+    protegerDeLimpieza(rambo);
 
     crearGuardias();
 }
@@ -114,7 +143,7 @@ void Nivel1::crearGuardias()
         Guardia *guardia = new Guardia(RUTAS[i][0], RUTAS[i][1], RUTAS[i][2], RUTAS[i][3], 60.0f,
                                        config.alcance, config.apertura, config.amplitud, config.frecuencia);
         agregarEntidad(guardia);
-        agentes.push_back(new AgenteGuardia(guardia, this, config.memoria));
+        agentes.push_back(new AgenteGuardia(guardia, this, config.memoria, config.velocidadDeteccion));
     }
 }
 

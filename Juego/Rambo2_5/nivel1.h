@@ -11,6 +11,7 @@ class AgenteGuardia;
 class Cadaver;
 class OndaRuido;
 
+enum class Dificultad { Facil, Normal, Dificil };
 enum class TipoObstaculo { Columna, Muro, Carro };
 
 // las columnas usan x, y y radio (centro); muros y carros usan x, y como esquina superior izquierda
@@ -41,9 +42,13 @@ struct ConfigNivel1
     float amplitud = 0.8f;
     float frecuencia = 1.2f;
     int memoria = 8;
+    float velocidadDeteccion = 0.7f;   // lo que sube el medidor por segundo viendo a Rambo
     int flechas = 6;
     int piedras = 4;
 };
+
+// las flechas y piedras son las mismas en las tres, con ellas se puede pasar la mas dificil
+ConfigNivel1 configurarDificultad(Dificultad dificultad);
 
 class Nivel1 : public Nivel
 {
