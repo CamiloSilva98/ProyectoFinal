@@ -16,6 +16,7 @@ SOURCES += \
     entidad.cpp \
     extintor.cpp \
     gestorjuego.cpp \
+    granada.cpp \
     guardia.cpp \
     itemfigura.cpp \
     itemguardia.cpp \
@@ -48,6 +49,7 @@ HEADERS += \
     estimulo.h \
     extintor.h \
     gestorjuego.h \
+    granada.h \
     guardia.h \
     itemfigura.h \
     itemguardia.h \

@@ -169,3 +169,12 @@ bool Rambo::lanzarPiedra()
 void Rambo::agregarPiedras(int cantidad) { piedras += cantidad; }
 int Rambo::getPiedras() const { return piedras; }
 
+// si se queda sin apoyo empieza a caer con el mismo modelo del salto
+void Rambo::soltarSuelo()
+{
+    if (!enSuelo || modeloSalto == nullptr) return;
+    enSuelo = false;
+    velocidadY = 0.0f;
+}
+
+void Rambo::setVelocidadSalto(float v) { velocidadSalto = v; }
