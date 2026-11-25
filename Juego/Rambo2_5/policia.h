@@ -46,6 +46,8 @@ public:
     void setLimites(float izq, float der);
     void setGravedadGranada(float g);
     void caer(float dt, float superficie);
+    float getTiempoDesdeAtaque(float tiempoAtaque) const;   // devuelve tiempoAtaque
+    bool estaCaminando() const;           // true si mover() lo desplazó este paso
 };
 
 #endif

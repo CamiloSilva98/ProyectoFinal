@@ -48,3 +48,8 @@ bool Granada::consumirExplosion()
 }
 
 float Granada::getRadioExplosion() const { return radioExplosion; }
+
+float Granada::getProgresoExplosion() const
+{
+    return 1.0f - tiempoExplosion / DURACION_EXPLOSION;
+}

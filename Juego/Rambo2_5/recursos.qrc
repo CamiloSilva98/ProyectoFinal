@@ -4,5 +4,7 @@
         <file>recursos/sprites/bala.png</file>
         <file>recursos/sprites/item.png</file>
         <file>recursos/sprites/fondo.png</file>
+        <file>recursos/sprites/municion.png</file>
+        <file>recursos/sprites/torreta.png</file>
     </qresource>
 </RCC>

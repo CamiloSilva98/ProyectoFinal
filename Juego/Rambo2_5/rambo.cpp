@@ -178,3 +178,12 @@ void Rambo::soltarSuelo()
 }
 
 void Rambo::setVelocidadSalto(float v) { velocidadSalto = v; }
+
+void Rambo::topeTecho(float yMinimo, float altoCuerpo)
+{
+    if (y - altoCuerpo < yMinimo)
+    {
+        y = yMinimo + altoCuerpo;
+        if (velocidadY < 0.0f) velocidadY = 0.0f;   // deja de subir y empieza a caer
+    }
+}

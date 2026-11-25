@@ -23,16 +23,26 @@ static const int CUADROS_ENERGIA = 12;
 static const float FACTOR_ALCANCE_EN_HUMO = 0.4f;
 static const float ZOOM_NIVEL2 = 1.0f;
 static const float ESCALA_RAMBO_N2 = 3.0f;
+static const float ANCHO_NIVEL2 = 1916.0f;   // ancho del fondo
+static const float ZONA_CAMARA = 200.0f;     // cuanto se aleja rambo del centro antes de que la camara lo siga
+static const float ESCALA_MUNICION = 1.5f;
+static const float ESCALA_TORRETA = 1.8f;
+static const float PIVOTE_TORRETA_X = 37.0f;
+static const float PIVOTE_TORRETA_Y = 15.0f;
 
 GestorJuego::GestorJuego(QGraphicsScene *escena, QObject *parent)
     : QObject(parent), escena(escena), pantalla(Pantalla::Menu), nivelActual(1), dificultad(Dificultad::Normal),
     nivel1(nullptr), nivel2(nullptr), hud(nullptr),
-    direccion(1.0f), tiempoAnim(0.0f), tiempoHerido(0.0f), tiempoItems(0.0f), saludAnterior(0)
+    direccion(1.0f), tiempoAnim(0.0f), tiempoHerido(0.0f), tiempoItems(0.0f), saludAnterior(0), camX(0.0f)
 {
     spritesRambo.load(":/sprites/recursos/sprites/rambo_sprites.png");
     spriteEnergia.load(":/sprites/recursos/sprites/item.png");
     spriteBala.load(":/sprites/recursos/sprites/bala.png");
+    spriteMunicion.load(":/sprites/recursos/sprites/municion.png");
+    spriteTorreta.load(":/sprites/recursos/sprites/torreta.png");
 
+    if (spriteMunicion.isNull()) qWarning("No se pudo cargar municion.png, revisar recursos.qrc");
+    if (spriteTorreta.isNull()) qWarning("No se pudo cargar torreta.png, revisar recursos.qrc");
     if (spritesRambo.isNull()) qWarning("No se pudo cargar rambo_sprites.png, revisar recursos.qrc");
     if (spriteEnergia.isNull()) qWarning("No se pudo cargar item.png, revisar recursos.qrc");
     if (spriteBala.isNull()) qWarning("No se pudo cargar bala.png, revisar recursos.qrc");
@@ -231,7 +241,7 @@ void GestorJuego::iniciarNivel2()
     limpiarEscena();
     nivelActual = 2;
 
-    nivel2 = new Nivel2(ANCHO_ESCENA, ALTO_ESCENA, 600);
+    nivel2 = new Nivel2(ANCHO_NIVEL2, ALTO_ESCENA, 650);
     nivel2->iniciar();
 
     direccion = 1.0f;
@@ -243,11 +253,9 @@ void GestorJuego::iniciarNivel2()
     // fondo del nivel, se estira a la escena y queda detras de las entidades
     QPixmap imagenFondo(":/sprites/recursos/sprites/fondo.png");
     QGraphicsPixmapItem *fondo = new QGraphicsPixmapItem(
-        imagenFondo.scaled(ANCHO_ESCENA, ALTO_ESCENA, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
+        imagenFondo.scaled(ANCHO_NIVEL2, ALTO_ESCENA, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
     fondo->setZValue(-10);
     agregarFijo(fondo, 0, 0);
-    float suelo = nivel2->getYSuelo();
-    escena->addLine(0, suelo, ANCHO_ESCENA, suelo, QPen(Qt::white));
     crearHud();
     activarCamara();
     seguirConCamara();
@@ -428,7 +436,7 @@ void GestorJuego::dibujarNivel2()
         }
         else if (Proyectil *p = dynamic_cast<Proyectil*>(e))
         {
-            if (p->esDeRambo() && !spriteBala.isNull())
+            if (!spriteBala.isNull())
             {
                 float grados = std::atan2(p->getVelocidadY(), p->getVelocidadX()) * GRADOS_POR_RADIAN;
                 QGraphicsPixmapItem *bala = new QGraphicsPixmapItem(spriteBala);
@@ -448,11 +456,18 @@ void GestorJuego::dibujarNivel2()
             if (s->getTipo() == TipoSuministro::Energia && !spriteEnergia.isNull())
             {
                 float anchoCuadro = spriteEnergia.width() / static_cast<float>(CUADROS_ENERGIA);
-                int cuadro = static_cast<int>(tiempoItems / 0.1f) % CUADROS_ENERGIA;
+                int cuadro = static_cast<int>(tiempoItems / 0.1f);
                 QPixmap botella = spriteEnergia.copy(static_cast<int>(cuadro * anchoCuadro), 0,
                                                      static_cast<int>(anchoCuadro), spriteEnergia.height())
                                       .scaledToHeight(30);
                 agregarMovil(new QGraphicsPixmapItem(botella), x - botella.width() / 2, y - botella.height());
+            }
+            else if (s->getTipo() == TipoSuministro::Municion && !spriteMunicion.isNull())
+            {
+                QGraphicsPixmapItem *caja = new QGraphicsPixmapItem(spriteMunicion);
+                caja->setOffset(-spriteMunicion.width() / 2.0, -spriteMunicion.height());
+                caja->setScale(ESCALA_MUNICION);
+                agregarMovil(caja, x, y);
             }
             else
             {
@@ -463,12 +478,24 @@ void GestorJuego::dibujarNivel2()
         }
         else if (ArmaOscilante *a = dynamic_cast<ArmaOscilante*>(e))
         {
-            agregarMovil(new ItemFigura(Forma::Elipse, 28, 28, Qt::gray), x, y);
-
-            float angulo = a->getAngulo();
-            agregarMovil(new ItemFigura(Forma::Rectangulo, 40, 4, Qt::gray),
-                         x + 20 * std::cos(angulo), y + 20 * std::sin(angulo))
-                ->setRotation(angulo * GRADOS_POR_RADIAN);
+            if (!spriteTorreta.isNull())
+            {
+                // el offset pone el pivote del sprite en el origen del item, y la rotación gira alrededor de él
+                QGraphicsPixmapItem *torreta = new QGraphicsPixmapItem(spriteTorreta);
+                torreta->setOffset(-PIVOTE_TORRETA_X, -PIVOTE_TORRETA_Y);
+                torreta->setScale(ESCALA_TORRETA);
+                // el cañón del sprite mira a la izquierda (180°), por eso se resta 180
+                torreta->setRotation(a->getAngulo() * GRADOS_POR_RADIAN - 180.0f);
+                agregarMovil(torreta, x, y);
+            }
+            else
+            {
+                agregarMovil(new ItemFigura(Forma::Elipse, 28, 28, Qt::gray), x, y);
+                float angulo = a->getAngulo();
+                agregarMovil(new ItemFigura(Forma::Rectangulo, 40, 4, Qt::gray),
+                             x + 20 * std::cos(angulo), y + 20 * std::sin(angulo))
+                    ->setRotation(angulo * GRADOS_POR_RADIAN);
+            }
         }
     }
 
@@ -490,32 +517,52 @@ int GestorJuego::cuadroRambo() const
 }
 void GestorJuego::activarCamara()
 {
-    QGraphicsView *vista = escena->views().isEmpty() ? nullptr : escena->views().first();
+    QGraphicsView *vista = escena->views().value(0);
     if (vista == nullptr) return;
 
-    escena->setSceneRect(0, 0, ANCHO_ESCENA, ALTO_ESCENA);
+    escena->setSceneRect(0, 0, ANCHO_NIVEL2, ALTO_ESCENA);
     vista->resetTransform();
     vista->scale(ZOOM_NIVEL2, ZOOM_NIVEL2);
-    hud->setScale(1.0f / ZOOM_NIVEL2);   // el texto no se agranda con el zoom
+    hud->setScale(1.0f);
+    camX = nivel2->getRambo()->getX();
 }
 
-// centra la vista en rambo, los bordes del mundo la limitan solos
+// la camara solo se mueve cuando rambo se aleja ZONA_CAMARA de su centro
 void GestorJuego::seguirConCamara()
 {
-    QGraphicsView *vista = escena->views().isEmpty() ? nullptr : escena->views().first();
+    QGraphicsView *vista = escena->views().value(0);
     if (vista == nullptr) return;
 
-    Rambo *rambo = nivel2->getRambo();
-    vista->centerOn(rambo->getX(), rambo->getY() - 40);
+    float x = nivel2->getRambo()->getX();
+    if (x > camX + ZONA_CAMARA) camX = x - ZONA_CAMARA;
+    else if (x < camX - ZONA_CAMARA) camX = x + ZONA_CAMARA;
+
+    // el centro de la camara no se sale del fondo
+    float mitad = vista->viewport()->width() / vista->transform().m11() / 2.0f;
+    camX = qMax(mitad, qMin(camX, ANCHO_NIVEL2 - mitad));
+
+    vista->centerOn(camX, ALTO_ESCENA / 2.0);
     hud->setPos(vista->mapToScene(10, 10));   // el hud queda fijo en la esquina de la pantalla
 }
 
 // vuelve a mostrar la escena completa, para el menu, el nivel 1 y los mensajes
 void GestorJuego::restablecerCamara()
 {
-    QGraphicsView *vista = escena->views().isEmpty() ? nullptr : escena->views().first();
+    QGraphicsView *vista = escena->views().value(0);
     if (vista == nullptr) return;
 
+    escena->setSceneRect(0, 0, ANCHO_ESCENA, ALTO_ESCENA);   // el menu y el nivel 1 usan 1280 x 720
     vista->resetTransform();
     vista->centerOn(ANCHO_ESCENA / 2.0, ALTO_ESCENA / 2.0);
+}
+
+void GestorJuego::agregarCuadro(const QPixmap &tira, int cuadro, int ancho, int alto,
+                                float escala, bool espejo, float x, float y)
+{
+    QPixmap parte = tira.copy(cuadro * ancho, 0, ancho, alto);
+    if (espejo) parte = parte.transformed(QTransform().scale(-1, 1));
+    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(parte);
+    item->setOffset(-ancho / 2.0, -alto);
+    item->setScale(escala);
+    agregarMovil(item, x, y);
 }
