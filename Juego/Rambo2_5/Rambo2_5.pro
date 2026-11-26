@@ -19,6 +19,7 @@ SOURCES += \
     guardia.cpp \
     itemfigura.cpp \
     itemguardia.cpp \
+    itempersonaje.cpp \
     itemrambo.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -51,6 +52,7 @@ HEADERS += \
     guardia.h \
     itemfigura.h \
     itemguardia.h \
+    itempersonaje.h \
     itemrambo.h \
     mainwindow.h \
     modeloarrastre.h \

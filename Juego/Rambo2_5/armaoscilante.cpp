@@ -34,4 +34,4 @@ Proyectil *ArmaOscilante::disparar()
     return new Proyectil(x, y, vx, vy, danoProyectil, modeloProyectil, rebote, 1);
 }
 
-float ArmaOscilante::getAngulo() const { return anguloActual; }
+float ArmaOscilante::getAngulo() const { return anguloActual; }

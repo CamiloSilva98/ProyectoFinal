@@ -18,4 +18,4 @@ public:
     bool marcarVistoPor(const void *guardia);
 };
 
-#endif
+#endif

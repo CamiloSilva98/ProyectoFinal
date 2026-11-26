@@ -2,6 +2,7 @@
 #define GESTORJUEGO_H
 
 #include <QObject>
+#include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QGraphicsSimpleTextItem>
 #include <QList>
@@ -51,11 +52,26 @@ private:
     QPixmap spritesRambo;
     QPixmap spriteEnergia;
     QPixmap spriteBala;
+    QPixmap fondoNivel1;
+    QPixmap spriteCarroCampero;
+    QPixmap spriteCarroSedan;
+    QPixmap spriteMuroVertical;
+    QPixmap spriteMuroHorizontal;
+    QPixmap spriteExtintor;
+    QPixmap spritesRamboNivel1;
+    QPixmap spritesGuardia;
+    QPixmap spriteAlerta;
+    QPixmap spriteDuda;
+    QPixmap cuerposGuardia[2];
     float direccion;
     float tiempoAnim;
     float tiempoHerido;
     float tiempoItems;
     int saludAnterior;
+    float animRambo;
+    float animGuardias;
+    float tiempoApuntando;
+    float anguloRambo;
 
     void actualizar();
     void actualizarNivel1();
@@ -71,6 +87,7 @@ private:
     void borrarMovibles();
     void agregarFijo(QGraphicsItem *item, float x, float y);
     QGraphicsItem *agregarMovil(QGraphicsItem *item, float x, float y);
+    QGraphicsPixmapItem *crearImagen(const QPixmap &imagen);
     void agregarTexto(const QString &texto, float y, int tamano, const QColor &color);
     void crearHud();
 

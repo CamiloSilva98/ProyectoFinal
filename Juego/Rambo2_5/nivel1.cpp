@@ -20,19 +20,36 @@ static const float DURACION_HUMO = 8.0f;
 static const float RADIO_RAMBO = 10.0f;
 static const float VELOCIDAD_RAMBO = 110.0f;
 static const int DANO_FLECHA = 10;
+static const float LADO_CELDA = 20.0f;
+// el guardia mide 12 de radio, los 2 de mas evitan que roce las esquinas
+static const float RADIO_PASO = 14.0f;
 
 // rutas de patrulla: x inicial, y inicial, x final, y final
+// el orden importa: en Facil solo salen los primeros 6 guardias
 static const float RUTAS[10][4] = {
-    {360, 100, 560, 100},
-    {400, 320, 400, 480},
-    {650, 60, 950, 60},
-    {760, 300, 760, 500},
-    {1000, 100, 1250, 100},
-    {950, 350, 950, 650},
-    {1150, 450, 1250, 650},
-    {100, 200, 250, 200},
-    {500, 500, 650, 650},
-    {900, 50, 900, 150}
+    {540, 95, 820, 95},      // habitacion de control, junto a la salida a la meta
+    {555, 200, 555, 470},    // pasillo izquierdo de monitoreo
+    {170, 250, 420, 250},    // parqueadero, fila de arriba
+    {680, 560, 1000, 560},   // pasillo bajo el complejo
+    {905, 200, 905, 470},    // pasillo derecho de monitoreo
+    {200, 440, 440, 440},    // parqueadero, fila de abajo
+    {700, 670, 1000, 670},   // pasillo sur
+    {690, 340, 770, 340},    // dentro de la habitacion interna
+    {100, 20, 330, 20},      // franja norte, sobre el parqueadero
+    {1130, 260, 1130, 480}   // zona este
+};
+
+// un guardia en su puesto no se distrae: detecta mucho mas rapido que uno que patrulla
+static const float FACTOR_DETECCION_ESTATICO = 5.0f;
+static const float FACTOR_ALCANCE_ESTATICO = 1.4f;
+static const float FACTOR_APERTURA_ESTATICO = 1.3f;
+
+// guardias que no patrullan: x, y y hacia donde miran (radianes)
+// el orden importa: Facil usa el primero, Normal los dos primeros y Dificil los tres
+static const float PUESTOS[3][3] = {
+    {1000, 85, 3.1416f},     // entrada a la zona de la meta
+    {440, 28, 0.0f},         // paso entre el parqueadero y el complejo, por el norte
+    {1245, 540, 1.5708f}     // paso del sur: la abertura junto al borde derecho, bajo el muro inferior
 };
 
 static float distancia(float x1, float y1, float x2, float y2)
@@ -57,6 +74,7 @@ ConfigNivel1 configurarDificultad(Dificultad dificultad)
     {
         config.tiempo = 240.0f;
         config.guardias = 6;
+        config.estaticos = 1;
         config.alcance = 150.0f;
         config.apertura = 0.8f;
         config.amplitud = 0.5f;
@@ -67,6 +85,7 @@ ConfigNivel1 configurarDificultad(Dificultad dificultad)
     else if (dificultad == Dificultad::Dificil)
     {
         config.tiempo = 120.0f;
+        config.estaticos = 3;
         config.alcance = 250.0f;
         config.apertura = 1.2f;
         config.amplitud = 1.0f;
@@ -74,12 +93,13 @@ ConfigNivel1 configurarDificultad(Dificultad dificultad)
         config.memoria = 12;
         config.velocidadDeteccion = 1.0f;
     }
+    else config.estaticos = 2;
     return config;
 }
 
 Nivel1::Nivel1(float ancho, float alto, ConfigNivel1 config)
     : Nivel(config.tiempo), anchoNivel(ancho), altoNivel(alto), config(config),
-    rambo(nullptr), meta({1200.0f, 60.0f, 55.0f}),
+    rambo(nullptr), meta({1200.0f, 60.0f, 55.0f}), columnas(0), filas(0),
     modeloFlecha(ARRASTRE_FLECHA, 1.0f), modeloPiedra(ARRASTRE_PIEDRA, 1.0f), reboteFlecha(0.7f),
     victoria(false), derrota(false)
 {
@@ -93,6 +113,7 @@ Nivel1::~Nivel1()
 void Nivel1::iniciar()
 {
     crearMapa();
+    construirRejilla();
 
     rambo = new Rambo(60.0f, 660.0f, 100, config.flechas, VELOCIDAD_RAMBO, RADIO_RAMBO);
     rambo->setParametrosFatiga(100.0f, 0.0f, 0.0f, 0.5f);
@@ -105,32 +126,54 @@ void Nivel1::iniciar()
 
 void Nivel1::crearMapa()
 {
-    obstaculos.push_back({TipoObstaculo::Muro, 300, 0, 0, 20, 300});
-    obstaculos.push_back({TipoObstaculo::Muro, 700, 420, 0, 20, 300});
-    obstaculos.push_back({TipoObstaculo::Muro, 1000, 200, 0, 200, 20});
+    // complejo central: pared izquierda, pared inferior y pared derecha (salida a la meta arriba)
+    obstaculos.push_back({TipoObstaculo::Muro, 480, 45, 0, 20, 555});
+    obstaculos.push_back({TipoObstaculo::Muro, 480, 600, 0, 740, 20});
+    obstaculos.push_back({TipoObstaculo::Muro, 960, 155, 0, 20, 365});
 
-    obstaculos.push_back({TipoObstaculo::Carro, 150, 520, 0, 70, 32});
-    obstaculos.push_back({TipoObstaculo::Carro, 420, 600, 0, 70, 32});
-    obstaculos.push_back({TipoObstaculo::Carro, 520, 300, 0, 32, 70});
-    obstaculos.push_back({TipoObstaculo::Carro, 820, 250, 0, 70, 32});
-    obstaculos.push_back({TipoObstaculo::Carro, 850, 560, 0, 70, 32});
-    obstaculos.push_back({TipoObstaculo::Carro, 1050, 420, 0, 32, 70});
+    // division entre control y monitoreo, con puerta de 110 a la derecha
+    obstaculos.push_back({TipoObstaculo::Muro, 500, 145, 0, 350, 20});
 
-    obstaculos.push_back({TipoObstaculo::Columna, 400, 200, 18, 0, 0});
-    obstaculos.push_back({TipoObstaculo::Columna, 600, 450, 18, 0, 0});
-    obstaculos.push_back({TipoObstaculo::Columna, 600, 150, 18, 0, 0});
-    obstaculos.push_back({TipoObstaculo::Columna, 900, 400, 18, 0, 0});
-    obstaculos.push_back({TipoObstaculo::Columna, 1100, 330, 18, 0, 0});
-    obstaculos.push_back({TipoObstaculo::Columna, 250, 380, 18, 0, 0});
+    // habitacion interna, con puerta de 110 abajo
+    obstaculos.push_back({TipoObstaculo::Muro, 610, 255, 0, 20, 185});
+    obstaculos.push_back({TipoObstaculo::Muro, 610, 255, 0, 240, 20});
+    obstaculos.push_back({TipoObstaculo::Muro, 830, 255, 0, 20, 185});
+    obstaculos.push_back({TipoObstaculo::Muro, 610, 420, 0, 65, 20});
+    obstaculos.push_back({TipoObstaculo::Muro, 785, 420, 0, 65, 20});
 
-    sombras.push_back({200, 420, 70});
-    sombras.push_back({640, 560, 80});
-    sombras.push_back({1000, 520, 70});
-    sombras.push_back({780, 100, 60});
+    // entrada al complejo de 120 entre x=500 y x=620
+    obstaculos.push_back({TipoObstaculo::Muro, 620, 500, 0, 360, 20});
 
-    agregarEntidad(new Extintor(220, 620));
-    agregarEntidad(new Extintor(760, 330));
-    agregarEntidad(new Extintor(1100, 150));
+    // la meta solo se alcanza pasando por las habitaciones
+    obstaculos.push_back({TipoObstaculo::Muro, 960, 210, 0, 320, 20});
+
+    // parqueadero
+    obstaculos.push_back({TipoObstaculo::Carro, 90, 95, 0, 32, 70});
+    obstaculos.push_back({TipoObstaculo::Carro, 225, 95, 0, 32, 70});
+    obstaculos.push_back({TipoObstaculo::Carro, 360, 95, 0, 32, 70});
+    obstaculos.push_back({TipoObstaculo::Carro, 165, 340, 0, 120, 40});
+    obstaculos.push_back({TipoObstaculo::Carro, 90, 495, 0, 32, 70});
+    obstaculos.push_back({TipoObstaculo::Carro, 360, 495, 0, 32, 70});
+
+    obstaculos.push_back({TipoObstaculo::Columna, 106, 55, 18, 0, 0});
+    obstaculos.push_back({TipoObstaculo::Columna, 241, 55, 18, 0, 0});
+    obstaculos.push_back({TipoObstaculo::Columna, 376, 55, 18, 0, 0});
+
+    // zonas oscuras: un respiro cerca del inicio, uno en cada tramo largo y uno antes de la meta
+    sombras.push_back({200, 650, 55});
+    sombras.push_back({330, 320, 60});
+    sombras.push_back({560, 555, 45});
+    sombras.push_back({555, 330, 50});
+    sombras.push_back({905, 330, 50});
+    sombras.push_back({910, 60, 50});
+    sombras.push_back({1050, 110, 50});
+
+    // extintores donde el humo sirve para cegar a un guardia que cuida un paso obligado
+    agregarEntidad(new Extintor(260, 560));
+    agregarEntidad(new Extintor(535, 470));
+    agregarEntidad(new Extintor(905, 440));
+    agregarEntidad(new Extintor(520, 100));
+    agregarEntidad(new Extintor(1010, 70));
 }
 
 void Nivel1::crearGuardias()
@@ -141,9 +184,20 @@ void Nivel1::crearGuardias()
     for (int i = 0; i < cantidad; ++i)
     {
         Guardia *guardia = new Guardia(RUTAS[i][0], RUTAS[i][1], RUTAS[i][2], RUTAS[i][3], 60.0f,
-                                       config.alcance, config.apertura, config.amplitud, config.frecuencia);
+                                       config.alcance, config.apertura, config.amplitud, config.frecuencia, this);
         agregarEntidad(guardia);
         agentes.push_back(new AgenteGuardia(guardia, this, config.memoria, config.velocidadDeteccion));
+    }
+
+    for (int i = 0; i < config.estaticos && i < 3; ++i)
+    {
+        Guardia *guardia = new Guardia(PUESTOS[i][0], PUESTOS[i][1], PUESTOS[i][0], PUESTOS[i][1], 60.0f,
+                                       config.alcance * FACTOR_ALCANCE_ESTATICO, config.apertura * FACTOR_APERTURA_ESTATICO,
+                                       config.amplitud, config.frecuencia, this);
+        guardia->fijarPuesto(PUESTOS[i][2]);
+        agregarEntidad(guardia);
+        agentes.push_back(new AgenteGuardia(guardia, this, config.memoria,
+                                            config.velocidadDeteccion * FACTOR_DETECCION_ESTATICO));
     }
 }
 
@@ -156,6 +210,7 @@ void Nivel1::actualizar(float dt)
                           || estaEnHumo(rambo->getX(), rambo->getY()));
 
     Nivel::actualizar(dt);
+    separarGuardiasDeObstaculos();
 
     if (rambo->consumirRuido())
         generarEstimulo(rambo->getX(), rambo->getY(), 300.0f, 1.0f);
@@ -191,6 +246,89 @@ void Nivel1::retirarGuardiasMuertos()
         agregarEntidad(new Cadaver(guardia->getX(), guardia->getY()));
         delete agentes[i];
         agentes.erase(agentes.begin() + i);
+    }
+}
+
+// la rejilla marca las celdas por las que un guardia no cabe
+void Nivel1::construirRejilla()
+{
+    columnas = static_cast<int>(std::ceil(anchoNivel / LADO_CELDA));
+    filas = static_cast<int>(std::ceil(altoNivel / LADO_CELDA));
+    celdaBloqueada.assign(columnas * filas, false);
+
+    for (int celda = 0; celda < columnas * filas; ++celda)
+    {
+        float cx = (celda % columnas + 0.5f) * LADO_CELDA;
+        float cy = (celda / columnas + 0.5f) * LADO_CELDA;
+        float nx, ny, penetracion;
+        celdaBloqueada[celda] = chocaConObstaculo(cx, cy, RADIO_PASO, nx, ny, penetracion);
+    }
+}
+
+// punto al que debe apuntar un guardia para llegar al destino sin chocar con los muros:
+// si hay paso libre va derecho, si no busca el camino por la rejilla
+void Nivel1::siguientePunto(float x, float y, float destinoX, float destinoY, float &puntoX, float &puntoY) const
+{
+    puntoX = destinoX;
+    puntoY = destinoY;
+    if (hayPasoLibre(x, y, destinoX, destinoY, RADIO_PASO)) return;
+
+    int inicio = static_cast<int>(limitar(y / LADO_CELDA, 0, filas - 1)) * columnas
+                 + static_cast<int>(limitar(x / LADO_CELDA, 0, columnas - 1));
+    int meta = static_cast<int>(limitar(destinoY / LADO_CELDA, 0, filas - 1)) * columnas
+               + static_cast<int>(limitar(destinoX / LADO_CELDA, 0, columnas - 1));
+    if (inicio == meta) return;
+
+    std::vector<int> anterior(columnas * filas, -1);
+    std::vector<int> cola;
+    cola.push_back(inicio);
+    anterior[inicio] = inicio;
+
+    const int saltoColumna[4] = {1, -1, 0, 0};
+    const int saltoFila[4] = {0, 0, 1, -1};
+    for (std::size_t i = 0; i < cola.size() && anterior[meta] == -1; ++i)
+    {
+        for (int k = 0; k < 4; ++k)
+        {
+            int columna = cola[i] % columnas + saltoColumna[k];
+            int fila = cola[i] / columnas + saltoFila[k];
+            if (columna < 0 || columna >= columnas || fila < 0 || fila >= filas) continue;
+
+            int vecina = fila * columnas + columna;
+            // la meta puede quedar pegada a un muro, a esa celda se le permite entrar
+            if (anterior[vecina] != -1 || (celdaBloqueada[vecina] && vecina != meta)) continue;
+            anterior[vecina] = cola[i];
+            cola.push_back(vecina);
+        }
+    }
+    if (anterior[meta] == -1) return;
+
+    std::vector<int> camino;
+    for (int celda = meta; celda != inicio; celda = anterior[celda])
+        camino.insert(camino.begin(), celda);
+
+    // se apunta a la celda mas lejana que se ve en linea recta para que no camine en zigzag
+    std::size_t elegida = 0;
+    for (std::size_t i = 1; i < camino.size(); ++i)
+    {
+        float cx = (camino[i] % columnas + 0.5f) * LADO_CELDA;
+        float cy = (camino[i] / columnas + 0.5f) * LADO_CELDA;
+        if (!hayPasoLibre(x, y, cx, cy, RADIO_PASO)) break;
+        elegida = i;
+    }
+    puntoX = (camino[elegida] % columnas + 0.5f) * LADO_CELDA;
+    puntoY = (camino[elegida] / columnas + 0.5f) * LADO_CELDA;
+}
+
+// por si un guardia roza una esquina: lo saca del obstaculo
+void Nivel1::separarGuardiasDeObstaculos()
+{
+    for (AgenteGuardia *agente : agentes)
+    {
+        Guardia *guardia = agente->getGuardia();
+        float nx, ny, penetracion;
+        if (chocaConObstaculo(guardia->getX(), guardia->getY(), guardia->getRadio(), nx, ny, penetracion))
+            guardia->setPosicion(guardia->getX() + nx * penetracion, guardia->getY() + ny * penetracion);
     }
 }
 
@@ -321,8 +459,13 @@ bool Nivel1::chocaConObstaculo(float px, float py, float radio, float &nx, float
     return false;
 }
 
-// se revisan puntos cada 5 px sobre la linea, es suficiente para obstaculos de mas de 15 px
 bool Nivel1::hayLineaDeVista(float x1, float y1, float x2, float y2) const
+{
+    return hayPasoLibre(x1, y1, x2, y2, 0.0f);
+}
+
+// se revisan puntos cada 5 px sobre la linea, es suficiente para obstaculos de mas de 15 px
+bool Nivel1::hayPasoLibre(float x1, float y1, float x2, float y2, float radio) const
 {
     float largo = distancia(x1, y1, x2, y2);
     int pasos = static_cast<int>(largo / 5.0f);
@@ -331,7 +474,7 @@ bool Nivel1::hayLineaDeVista(float x1, float y1, float x2, float y2) const
     for (int i = 1; i < pasos; ++i)
     {
         float t = static_cast<float>(i) / pasos;
-        if (chocaConObstaculo(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, 0.0f, nx, ny, penetracion))
+        if (chocaConObstaculo(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, radio, nx, ny, penetracion))
             return false;
     }
     return true;

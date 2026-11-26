@@ -37,6 +37,7 @@ struct ConfigNivel1
 {
     float tiempo = 180.0f;
     int guardias = 10;
+    int estaticos = 0;
     float alcance = 200.0f;
     float apertura = 1.0f;
     float amplitud = 0.8f;
@@ -62,6 +63,9 @@ private:
     std::vector<Obstaculo> obstaculos;
     std::vector<Circulo> sombras;
     Circulo meta;
+    int columnas;
+    int filas;
+    std::vector<bool> celdaBloqueada;
 
     ModeloArrastre modeloFlecha;
     ModeloArrastre modeloPiedra;
@@ -76,6 +80,8 @@ private:
     void actualizarGuardias(float dt);
     void resolverColisiones();
     bool ramboChoca() const;
+    void separarGuardiasDeObstaculos();
+    void construirRejilla();
 
 public:
     Nivel1(float ancho, float alto, ConfigNivel1 config = ConfigNivel1());
@@ -95,6 +101,8 @@ public:
 
     bool chocaConObstaculo(float px, float py, float radio, float &nx, float &ny, float &penetracion) const;
     bool hayLineaDeVista(float x1, float y1, float x2, float y2) const;
+    bool hayPasoLibre(float x1, float y1, float x2, float y2, float radio) const;
+    void siguientePunto(float x, float y, float destinoX, float destinoY, float &puntoX, float &puntoY) const;
     bool estaEnHumo(float px, float py) const;
     bool estaEnSombra(float px, float py) const;
 

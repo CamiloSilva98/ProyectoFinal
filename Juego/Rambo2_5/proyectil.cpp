@@ -34,4 +34,4 @@ float Proyectil::getVelocidadX() const { return velocidadX; }
 float Proyectil::getVelocidadY() const { return velocidadY; }
 
 void Proyectil::setDeRambo(bool valor) { deRambo = valor; }
-bool Proyectil::esDeRambo() const { return deRambo; }
+bool Proyectil::esDeRambo() const { return deRambo; }

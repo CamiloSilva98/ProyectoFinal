@@ -23,4 +23,4 @@ public:
     int getCantidad() const;
 };
 
-#endif
+#endif

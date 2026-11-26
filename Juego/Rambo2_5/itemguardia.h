@@ -2,23 +2,18 @@
 #define ITEMGUARDIA_H
 
 #include <QGraphicsItem>
-#include <QColor>
 
-// el guardia con su cono de vision; el angulo y la apertura vienen en radianes
+// la barra que se llena sobre el guardia mientras ve a Rambo; deteccion va de 0 a 1
 class ItemGuardia : public QGraphicsItem
 {
 public:
-    ItemGuardia(float alcance, float apertura, float angulo, float deteccion, const QColor &colorCono);
+    ItemGuardia(float deteccion);
 
     QRectF boundingRect() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
 
 private:
-    float alcance;
-    float apertura;
-    float angulo;
     float deteccion;
-    QColor colorCono;
 };
 
 #endif // ITEMGUARDIA_H

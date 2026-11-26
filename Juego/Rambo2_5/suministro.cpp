@@ -24,4 +24,4 @@ void Suministro::aplicarA(Rambo &rambo)
 }
 
 TipoSuministro Suministro::getTipo() const { return tipo; }
-int Suministro::getCantidad() const { return cantidad; }
+int Suministro::getCantidad() const { return cantidad; }

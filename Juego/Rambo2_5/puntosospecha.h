@@ -8,4 +8,4 @@ struct PuntoSospecha
     int falsasAlarmas;
 };
 
-#endif
+#endif

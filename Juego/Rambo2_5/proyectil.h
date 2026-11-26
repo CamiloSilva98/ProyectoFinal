@@ -32,4 +32,4 @@ public:
     float getVelocidadY() const;
 };
 
-#endif
+#endif

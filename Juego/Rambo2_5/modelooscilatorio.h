@@ -34,4 +34,4 @@ public:
     float getFrecuencia() const { return frecuencia; }
 };
 
-#endif
+#endif

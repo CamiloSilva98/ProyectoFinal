@@ -3,5 +3,16 @@
         <file>recursos/sprites/rambo_sprites.png</file>
         <file>recursos/sprites/bala.png</file>
         <file>recursos/sprites/item.png</file>
+        <file>recursos/sprites/fondo_nivel1.png</file>
+        <file>recursos/sprites/carro_campero.png</file>
+        <file>recursos/sprites/carro_sedan.png</file>
+        <file>recursos/sprites/muro_vertical.png</file>
+        <file>recursos/sprites/muro_horizontal.png</file>
+        <file>recursos/sprites/extintor.png</file>
+        <file>recursos/sprites/rambo_cenital.png</file>
+        <file>recursos/sprites/guardia_cenital.png</file>
+        <file>recursos/sprites/simbolo_alerta.png</file>
+        <file>recursos/sprites/simbolo_duda.png</file>
+        <file>recursos/sprites/cadaver_guardia.png</file>
     </qresource>
 </RCC>

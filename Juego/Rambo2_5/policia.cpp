@@ -52,4 +52,4 @@ void Policia::setParametrosAtaque(float rango, float intervalo, float velX, floa
     velocidadBombaX = velX;
     velocidadBombaY = velY;
     danoBomba = dano;
-}
+}
