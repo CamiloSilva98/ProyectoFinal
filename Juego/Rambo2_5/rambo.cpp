@@ -13,7 +13,7 @@ Rambo::Rambo(float x, float y, int salud, int municion, float velocidad, float r
     fatigaMax(100.0f), tasaFatiga(1.0f), costoDisparo(2.0f),
     intervaloBase(0.3f), tiempoDisparo(10.0f), factorFatiga(0.5f),
     piedras(0), corriendo(false), acechador(false), enCobertura(false), movio(false),
-    tiempoQuieto(0.0f), tiempoRuido(0.0f), ruidoPendiente(false){}
+    tiempoQuieto(0.0f), tiempoRuido(0.0f), ruidoPendiente(false), saludMax(salud) {}
 
 
 void Rambo::actualizar(float dt)
@@ -190,6 +190,7 @@ void Rambo::topeTecho(float yMinimo, float altoCuerpo)
 
 void Rambo::curar(int cantidad)
 {
+    if (cantidad <= 0 || salud >= saludMax) return;
     salud += cantidad;
     if (salud > saludMax) salud = saludMax;
 }
