@@ -39,7 +39,8 @@ void AgenteGuardia::actualizar(float dt)
     if (guardia->consumirInvestigacion(x, y, encontro))
         aprendizaje.registrarResultado(x, y, encontro);
 
-    if (guardia->getDeteccion() >= 1.0f)
+    // despues de cada disparo el guardia tiene que recargar
+    if (guardia->getDeteccion() >= 1.0f && guardia->puedeDisparar())
         guardia->atacar(*nivel->getRambo());
 }
 

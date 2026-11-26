@@ -6,6 +6,8 @@
 
 enum class EstadoGuardia { Patrullando, Investigando, Persiguiendo };
 
+class Nivel1;
+
 class Guardia : public Enemigo
 {
 private:
@@ -33,9 +35,16 @@ private:
     bool encontroRambo;
     float investigadoX, investigadoY;
 
+    bool estatico;
+    float thetaPuesto;
+    float recarga;
+
+    Nivel1 *nivel;   // no es dueno, puede ser nullptr
+
 public:
     Guardia(float x, float y, float finX, float finY, float velocidad,
-            float alcance, float apertura, float amplitud, float frecuencia);
+            float alcance, float apertura, float amplitud, float frecuencia,
+            Nivel1 *nivel = nullptr);
 
     void actualizar(float dt) override;
     void mover(float dt) override;
@@ -44,6 +53,10 @@ public:
     void investigar(float x, float y);
     void perseguir(float x, float y);
     void alarmar();
+
+    // el guardia se queda en su puesto mirando hacia theta y solo sale a investigar
+    void fijarPuesto(float theta);
+    bool puedeDisparar() const;
 
     void subirDeteccion(float cantidad);
     void bajarDeteccion(float cantidad);

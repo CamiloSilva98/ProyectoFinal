@@ -2,6 +2,7 @@
 #define GESTORJUEGO_H
 
 #include <QObject>
+#include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QGraphicsSimpleTextItem>
 #include <QList>
@@ -56,6 +57,17 @@ private:
     QPixmap spritesRambo;
     QPixmap spriteEnergia;
     QPixmap spriteBala;
+    QPixmap fondoNivel1;
+    QPixmap spriteCarroCampero;
+    QPixmap spriteCarroSedan;
+    QPixmap spriteMuroVertical;
+    QPixmap spriteMuroHorizontal;
+    QPixmap spriteExtintor;
+    QPixmap spritesRamboNivel1;
+    QPixmap spritesGuardia;
+    QPixmap spriteAlerta;
+    QPixmap spriteDuda;
+    QPixmap cuerposGuardia[2];
     QPixmap spriteMunicion;
     QPixmap spriteTorreta;
     QPixmap spriteFusilero;
@@ -65,7 +77,6 @@ private:
     QVector<QPixmap> cargarCuadros(const QString &prefijo, int cantidad);
     void agregarImagen(const QPixmap &imagen, float escala, bool espejo, float x, float y);
 
-
     QList<QVector4D> muertes;                           // x, y, tiempo, espejo
     QHash<const entidad*, QVector4D> ultimosPolicias;   // x, y, mira a la derecha
 
@@ -74,6 +85,10 @@ private:
     float tiempoHerido;
     float tiempoItems;
     int saludAnterior;
+    float animRambo;
+    float animGuardias;
+    float tiempoApuntando;
+    float anguloRambo;
     float camX;
 
     void actualizar();
@@ -90,6 +105,7 @@ private:
     void borrarMovibles();
     void agregarFijo(QGraphicsItem *item, float x, float y);
     QGraphicsItem *agregarMovil(QGraphicsItem *item, float x, float y);
+    QGraphicsPixmapItem *crearImagen(const QPixmap &imagen);
     void agregarTexto(const QString &texto, float y, int tamano, const QColor &color);
     void crearHud();
 

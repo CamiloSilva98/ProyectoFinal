@@ -20,4 +20,4 @@ public:
     std::vector<Estimulo> detectarEstimulos(const Guardia &guardia);
 };
 
-#endif
+#endif

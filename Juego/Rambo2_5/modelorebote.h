@@ -30,4 +30,4 @@ public:
     float getRestitucion() const { return restitucion; }
 };
 
-#endif
+#endif

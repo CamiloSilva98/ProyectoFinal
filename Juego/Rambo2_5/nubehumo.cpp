@@ -11,4 +11,4 @@ void NubeHumo::actualizar(float dt)
     if (tiempoVida <= 0.0f) salud = 0;
 }
 
-float NubeHumo::getTiempoVida() const { return tiempoVida; }
+float NubeHumo::getTiempoVida() const { return tiempoVida; }
