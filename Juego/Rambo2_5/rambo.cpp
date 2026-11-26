@@ -187,3 +187,9 @@ void Rambo::topeTecho(float yMinimo, float altoCuerpo)
         if (velocidadY < 0.0f) velocidadY = 0.0f;   // deja de subir y empieza a caer
     }
 }
+
+void Rambo::curar(int cantidad)
+{
+    salud += cantidad;
+    if (salud > saludMax) salud = saludMax;
+}

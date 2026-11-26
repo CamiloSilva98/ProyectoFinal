@@ -10,6 +10,11 @@
 #include <QTimer>
 #include "nivel1.h"
 #include "nivel2.h"
+#include <QHash>
+#include <QVector4D>
+#include <QVector>
+#include "entidad.h"
+
 
 const int ANCHO_ESCENA = 1280;
 const int ALTO_ESCENA = 720;
@@ -53,6 +58,17 @@ private:
     QPixmap spriteBala;
     QPixmap spriteMunicion;
     QPixmap spriteTorreta;
+    QPixmap spriteFusilero;
+    QPixmap spriteGranada, spriteExplosion, spriteBalaTorreta;
+
+    QVector<QPixmap> cuadrosCorrer, cuadrosLanzar, cuadrosMuerte;
+    QVector<QPixmap> cargarCuadros(const QString &prefijo, int cantidad);
+    void agregarImagen(const QPixmap &imagen, float escala, bool espejo, float x, float y);
+
+
+    QList<QVector4D> muertes;                           // x, y, tiempo, espejo
+    QHash<const entidad*, QVector4D> ultimosPolicias;   // x, y, mira a la derecha
+
     float direccion;
     float tiempoAnim;
     float tiempoHerido;
@@ -84,7 +100,7 @@ private:
     void activarCamara();
     void seguirConCamara();
     void restablecerCamara();
-    void agregarCuadro(const QPixmap &tira, int cuadro, int ancho, int alto,
+    void agregarCuadro(const QPixmap &tira, int cuadro, int cuadros,
                        float escala, bool espejo, float x, float y);
 };
 

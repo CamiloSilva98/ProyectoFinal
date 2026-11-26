@@ -9,6 +9,9 @@
 static const float ANCHO_CUERPO = 45.0f;
 static const float ALTO_CUERPO = 126.0f;
 static const float RADIO_PROYECTIL = 6.0f;
+// la dificultad escogida tambien se aplica al nivel 2
+
+
 
 // el cuerpo es un rectangulo con los pies en (x, y) y el proyectil un punto con un radio pequeno
 static bool golpea(const entidad &proyectil, const entidad &cuerpo)
@@ -34,9 +37,9 @@ Nivel2::Nivel2(float ancho, float alto, float ySuelo)
     rambo(nullptr), arma(nullptr),
     modeloSalto(700.0f), modeloBala(0.0f), modeloBomba(500.0f),
     reboteBala(0.5f), reboteGranada(0.45f), oscilador(0.6f, 1.5f),
-    numeroHorda(1), tiempoHorda(0.0f), tiempoSpawn(0.0f),
+    numeroHorda(1), tiempoHorda(0.0f), tiempoSpawn(3.0f),
     generando(false),
-    intervaloArma(2.0f), tiempoArma(0.0f), probSuministro(45),
+    intervaloArma(1.5f), tiempoArma(0.0f), probSuministro(35), factorDificultad(1.0f),
     victoria(false), derrota(false)
 {
     // duracion, intervalo de aparicion, maximo en pantalla, salud, velocidad, intervalo de ataque
@@ -122,7 +125,7 @@ void Nivel2::iniciarHorda()
 {
     const ConfigHorda &cfg = hordas[numeroHorda - 1];
     tiempoHorda = cfg.duracion;
-    tiempoSpawn = cfg.intervaloSpawn;   // el primer policia aparece enseguida
+    tiempoSpawn = cfg.intervaloSpawn / factorDificultad;   // el primer policia aparece enseguida
     generando = true;
 }
 
@@ -140,8 +143,11 @@ void Nivel2::actualizarHorda(float dt)
         return;
     }
 
+    float intervalo = cfg.intervaloSpawn / factorDificultad;
+    int maximo = static_cast<int>(cfg.maxEnPantalla * factorDificultad + 0.5f);
+
     tiempoSpawn += dt;
-    if (tiempoSpawn >= cfg.intervaloSpawn && contarPolicias() < cfg.maxEnPantalla)
+    if (tiempoSpawn >= intervalo && contarPolicias() < maximo)
     {
         generarPolicia();
         tiempoSpawn = 0.0f;
@@ -167,22 +173,25 @@ void Nivel2::generarPolicia()
     const ConfigHorda &cfg = hordas.at(numeroHorda - 1);
     const PuntoAparicion &pt = puntos[std::rand() % puntos.size()];
     bool granadero = (std::rand() % 2 == 0);
+    float f = factorDificultad;
+    int salud = static_cast<int>(cfg.saludPolicia * f);
+    float velocidad = cfg.velocidadPolicia * (1.0f + (f - 1.0f) * 0.5f);   // la velocidad sube menos
 
-    Policia *p = new Policia(pt.x, pt.y, cfg.saludPolicia, cfg.velocidadPolicia,
-                             rambo, this, &modeloBomba);
+    Policia *p = new Policia(pt.x, pt.y, salud, velocidad, rambo, this, &modeloBomba);
     p->setLimites(pt.izq, pt.der);
     p->setModelos(&modeloBala, &reboteGranada);
     p->setGravedadGranada(modeloBomba.getGravedad());
 
+    float intervaloAtaque = cfg.intervaloAtaque / f;
     if (granadero)
     {
         p->setTipo(TipoPolicia::Granadero);
-        p->setParametrosAtaque(600.0f, cfg.intervaloAtaque * 1.5f, 400.0f, 300.0f, 25);
+        p->setParametrosAtaque(600.0f, intervaloAtaque * 1.5f, 400.0f, 300.0f, static_cast<int>(25 * f));
     }
     else
     {
         p->setTipo(TipoPolicia::Fusilero);
-        p->setParametrosAtaque(500.0f, cfg.intervaloAtaque * 0.5f, 500.0f, 0.0f, 8);
+        p->setParametrosAtaque(500.0f, intervaloAtaque * 0.5f, 500.0f, 0.0f, static_cast<int>(8 * f));
     }
     agregarEntidad(p);
 }
@@ -193,7 +202,7 @@ void Nivel2::soltarSuministro(float px, float py)
 
     TipoSuministro tipo = (std::rand() % 2 == 0) ? TipoSuministro::Energia
                                                  : TipoSuministro::Municion;
-    int cantidad = (tipo == TipoSuministro::Energia) ? 50 : 25;
+    int cantidad = (tipo == TipoSuministro::Energia) ? static_cast<int>(22.0f / factorDificultad) : 25;
     agregarEntidad(new Suministro(px, py, tipo, cantidad));
 }
 
@@ -353,3 +362,9 @@ void Nivel2::limitesDeBase(float px, float superficie, float &izq, float &der) c
     }
 }
 const std::vector<Plataforma> &Nivel2::getPlataformas() const { return plataformas; }
+
+void Nivel2::setDificultad(float factor)
+{
+    factorDificultad = factor;
+    intervaloArma = 2.0f / factor;
+}

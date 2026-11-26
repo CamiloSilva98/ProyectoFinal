@@ -74,6 +74,7 @@ private:
     float tiempoArma;
 
     int probSuministro;    // porcentaje de soltar suministro al morir un policia
+    float factorDificultad;   // 1.0 es normal
 
     bool victoria;
     bool derrota;
@@ -109,6 +110,7 @@ public:
     float getAlto() const;
     float getYSuelo() const;
     const std::vector<Plataforma> &getPlataformas() const;
+    void setDificultad(float factor);
 };
 
 #endif

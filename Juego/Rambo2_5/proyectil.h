@@ -16,6 +16,9 @@ private:
     ModeloFisico *modelo;   // movimiento, no es dueño
     ModeloRebote *rebote;   // puede ser nullptr si no rebota, no es dueño
     bool deRambo;
+    bool deTorreta;
+
+
 
 public:
     Proyectil(float x, float y, float vx, float vy, int dano,
@@ -30,6 +33,10 @@ public:
     bool esDeRambo() const;
     float getVelocidadX() const;
     float getVelocidadY() const;
+    void setDeTorreta(bool valor);
+    bool esDeTorreta() const;
+
+
 };
 
 #endif

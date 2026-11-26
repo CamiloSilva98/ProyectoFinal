@@ -15,20 +15,37 @@
 #include <QGraphicsPixmapItem>
 #include <cmath>
 #include <QGraphicsView>
+#include <QTransform>
 
 static const float PASO = 0.016f;
 static const float GRADOS_POR_RADIAN = 57.29578f;
-static const int CUADROS_ENERGIA = 12;
 // el mismo valor que usa Percepcion cuando el guardia esta dentro del humo
 static const float FACTOR_ALCANCE_EN_HUMO = 0.4f;
 static const float ZOOM_NIVEL2 = 1.0f;
 static const float ESCALA_RAMBO_N2 = 3.0f;
 static const float ANCHO_NIVEL2 = 1916.0f;   // ancho del fondo
 static const float ZONA_CAMARA = 200.0f;     // cuanto se aleja rambo del centro antes de que la camara lo siga
-static const float ESCALA_MUNICION = 1.5f;
 static const float ESCALA_TORRETA = 1.8f;
 static const float PIVOTE_TORRETA_X = 37.0f;
 static const float PIVOTE_TORRETA_Y = 15.0f;
+static const int CUADROS_GRANADA = 3;
+static const int CUADROS_EXPLOSION = 3;
+static const float ESCALA_POLICIA = 3.0f;      // 40 px * 3 = 120, cerca de los 126 de la colisión
+static const float ESCALA_GRANADA = 2.0f;
+static const float ESCALA_BALA_TORRETA = 2.0f;
+static const float ESCALA_ITEM = 1.5f;
+static const float DURACION_POSE_DISPARO = 0.3f;
+static const float DURACION_POSE_LANZAR = 0.5f;
+static const float DURACION_ANIM_MUERTE = 0.8f;   // lo que tarda en caer
+static const float DURACION_CUERPO = 1.2f;        // luego desaparece
+
+// la dificultad escogida tambien se aplica al nivel 2
+static float factorNivel2(Dificultad d)
+{
+    if (d == Dificultad::Facil) return 0.7f;
+    if (d == Dificultad::Dificil) return 1.4f;
+    return 1.0f;
+}
 
 GestorJuego::GestorJuego(QGraphicsScene *escena, QObject *parent)
     : QObject(parent), escena(escena), pantalla(Pantalla::Menu), nivelActual(1), dificultad(Dificultad::Normal),
@@ -40,12 +57,24 @@ GestorJuego::GestorJuego(QGraphicsScene *escena, QObject *parent)
     spriteBala.load(":/sprites/recursos/sprites/bala.png");
     spriteMunicion.load(":/sprites/recursos/sprites/municion.png");
     spriteTorreta.load(":/sprites/recursos/sprites/torreta.png");
+    spriteFusilero.load(":/sprites/recursos/sprites/enemigoshoot.png");
+    spriteGranada.load(":/sprites/recursos/sprites/granada.png");
+    spriteExplosion.load(":/sprites/recursos/sprites/explosion.png");
+    spriteBalaTorreta.load(":/sprites/recursos/sprites/balatorreta.png");
+    cuadrosCorrer = cargarCuadros(":/sprites/recursos/sprites/enemigo", 7);
+    cuadrosLanzar = cargarCuadros(":/sprites/recursos/sprites/granadero", 6);
+    cuadrosMuerte = cargarCuadros(":/sprites/recursos/sprites/enemigosMuerte", 3);
 
     if (spriteMunicion.isNull()) qWarning("No se pudo cargar municion.png, revisar recursos.qrc");
     if (spriteTorreta.isNull()) qWarning("No se pudo cargar torreta.png, revisar recursos.qrc");
     if (spritesRambo.isNull()) qWarning("No se pudo cargar rambo_sprites.png, revisar recursos.qrc");
     if (spriteEnergia.isNull()) qWarning("No se pudo cargar item.png, revisar recursos.qrc");
     if (spriteBala.isNull()) qWarning("No se pudo cargar bala.png, revisar recursos.qrc");
+    if (spriteFusilero.isNull()) qWarning("No se pudo cargar enemigoshoot.png, revisar recursos.qrc");
+    if (spriteGranada.isNull()) qWarning("No se pudo cargar granada.png, revisar recursos.qrc");
+    if (spriteExplosion.isNull()) qWarning("No se pudo cargar explosion.png, revisar recursos.qrc");
+    if (spriteBalaTorreta.isNull()) qWarning("No se pudo cargar balatorreta.png, revisar recursos.qrc");
+
 
     escena->setSceneRect(0, 0, ANCHO_ESCENA, ALTO_ESCENA);
 
@@ -115,6 +144,7 @@ void GestorJuego::setDificultad(Dificultad nueva)
     dificultad = nueva;
 
     if (pantalla == Pantalla::JugandoNivel1) iniciarNivel1();
+    else if (pantalla == Pantalla::JugandoNivel2) nivel2->setDificultad(factorNivel2(dificultad));
     else if (pantalla == Pantalla::Menu) mostrarMenu();
 }
 
@@ -213,7 +243,7 @@ void GestorJuego::mostrarMenu()
     agregarTexto("RAMBO", 80, 60, Qt::white);
     agregarTexto("1 o Enter: Nivel 1 (infiltracion)", 240, 24, Qt::white);
     agregarTexto("2: Nivel 2 (hordas)", 285, 24, Qt::white);
-    agregarTexto("Dificultad del Nivel 1: " + nombreDificultad(dificultad) + "  (se cambia en el menu de arriba)", 335, 20, Qt::yellow);
+    agregarTexto("Dificultad: " + nombreDificultad(dificultad) + "  (se cambia en el menu de arriba, vale para los dos niveles)", 335, 20, Qt::yellow);
     agregarTexto("Nivel 1:  WASD mover   Shift correr   clic izquierdo flecha   clic derecho piedra", 400, 18, Qt::lightGray);
     agregarTexto("Llega a la zona verde sin que te vean. Los guardias oyen el ruido.", 430, 18, Qt::lightGray);
     agregarTexto("Nivel 2:  A y D mover   Espacio saltar   J disparar", 490, 18, Qt::lightGray);
@@ -242,6 +272,7 @@ void GestorJuego::iniciarNivel2()
     nivelActual = 2;
 
     nivel2 = new Nivel2(ANCHO_NIVEL2, ALTO_ESCENA, 650);
+    nivel2->setDificultad(factorNivel2(dificultad));
     nivel2->iniciar();
 
     direccion = 1.0f;
@@ -289,6 +320,8 @@ void GestorJuego::limpiarEscena()
     escena->clear();
     movibles.clear();
     hud = nullptr;
+    muertes.clear();
+    ultimosPolicias.clear();
 }
 
 void GestorJuego::borrarMovibles()
@@ -415,9 +448,17 @@ void GestorJuego::dibujarNivel1()
                      .arg(static_cast<int>(nivel1->getTiempoRestante())).arg(nombreDificultad(dificultad)));
 }
 
+static QPixmap cuadroEn(const QVector<QPixmap> &v, int i)
+{
+    if (v.isEmpty()) return QPixmap();
+    return v.at(qBound(0, i, v.size() - 1));
+}
+
 void GestorJuego::dibujarNivel2()
 {
     borrarMovibles();
+    Rambo *rambo = nivel2->getRambo();
+    QSet<const entidad*> vivos;
 
     for (entidad *e : nivel2->getEntidades())
     {
@@ -429,19 +470,67 @@ void GestorJuego::dibujarNivel2()
         {
             agregarMovil(new ItemRambo(spritesRambo, cuadroRambo(), direccion < 0.0f, ESCALA_RAMBO_N2), x, y);
         }
-        else if (dynamic_cast<Policia*>(e) != nullptr)
+        else if (Policia *pol = dynamic_cast<Policia*>(e))
         {
-            // y es la altura de los pies, el item se centra en el cuerpo
-            agregarMovil(new ItemFigura(Forma::Rectangulo, 30, 60, QColor(70, 110, 220)), x, y - 30);
+            bool haciaDerecha = rambo->getX() >= x;
+            float t = pol->getTiempoAtaque();
+
+            vivos.insert(pol);
+            ultimosPolicias.insert(pol, QVector4D(x, y, haciaDerecha ? 1.0f : 0.0f, 0.0f));
+
+            if (pol->getTipo() == TipoPolicia::Fusilero && t < DURACION_POSE_DISPARO)
+            {
+                // el sprite del fusil mira a la derecha
+                agregarImagen(spriteFusilero, ESCALA_POLICIA, !haciaDerecha, x, y);
+            }
+            else if (pol->getTipo() == TipoPolicia::Granadero && t < DURACION_POSE_LANZAR)
+            {
+                int n = cuadrosLanzar.size();
+                int i = qMin(n - 1, static_cast<int>(t / DURACION_POSE_LANZAR * n));
+                // los demas sprites miran a la izquierda
+                agregarImagen(cuadroEn(cuadrosLanzar, i), ESCALA_POLICIA, haciaDerecha, x, y);
+            }
+            else
+            {
+                int n = qMax(1, cuadrosCorrer.size());
+                int i = pol->estaCaminando() ? static_cast<int>(tiempoItems / 0.1f) % n : 0;
+                agregarImagen(cuadroEn(cuadrosCorrer, i), ESCALA_POLICIA, haciaDerecha, x, y);
+            }
+        }
+        else if (Granada *g = dynamic_cast<Granada*>(e))
+        {
+            if (g->estaExplotando())
+            {
+                float progreso = qBound(0.0f, g->getProgresoExplosion(), 0.999f);
+                int cuadro = static_cast<int>(progreso * CUADROS_EXPLOSION);
+                float anchoCuadro = spriteExplosion.width() / static_cast<float>(CUADROS_EXPLOSION);
+                float escala = 2.0f * g->getRadioExplosion() / anchoCuadro;   // diametro = 2 * radio
+                // el ayudante pone los pies en y, se sube media altura para centrar la explosion
+                agregarCuadro(spriteExplosion, cuadro, CUADROS_EXPLOSION, escala, false,
+                              x, y + spriteExplosion.height() * escala / 2.0f);
+            }
+            else if (!spriteGranada.isNull())
+            {
+                int cuadro = static_cast<int>(tiempoItems / 0.08f) % CUADROS_GRANADA;
+                agregarCuadro(spriteGranada, cuadro, CUADROS_GRANADA, ESCALA_GRANADA, false,
+                              x, y + spriteGranada.height() * ESCALA_GRANADA / 2.0f);
+            }
+            else
+            {
+                agregarMovil(new ItemFigura(Forma::Elipse, 12, 12, QColor(255, 130, 40)), x, y);
+            }
         }
         else if (Proyectil *p = dynamic_cast<Proyectil*>(e))
         {
-            if (!spriteBala.isNull())
+            float grados = std::atan2(p->getVelocidadY(), p->getVelocidadX()) * GRADOS_POR_RADIAN;
+            const QPixmap &sprite = p->esDeTorreta() ? spriteBalaTorreta : spriteBala;
+            float escala = p->esDeTorreta() ? ESCALA_BALA_TORRETA : 2.0f;
+
+            if (!sprite.isNull())
             {
-                float grados = std::atan2(p->getVelocidadY(), p->getVelocidadX()) * GRADOS_POR_RADIAN;
-                QGraphicsPixmapItem *bala = new QGraphicsPixmapItem(spriteBala);
-                bala->setOffset(-spriteBala.width() / 2.0, -spriteBala.height() / 2.0);
-                bala->setScale(2);
+                QGraphicsPixmapItem *bala = new QGraphicsPixmapItem(sprite);
+                bala->setOffset(-sprite.width() / 2.0, -sprite.height() / 2.0);
+                bala->setScale(escala);
                 bala->setRotation(grados);
                 agregarMovil(bala, x, y);
             }
@@ -453,21 +542,13 @@ void GestorJuego::dibujarNivel2()
         }
         else if (Suministro *s = dynamic_cast<Suministro*>(e))
         {
-            if (s->getTipo() == TipoSuministro::Energia && !spriteEnergia.isNull())
+            const QPixmap &sprite = (s->getTipo() == TipoSuministro::Energia) ? spriteEnergia : spriteMunicion;
+            if (!sprite.isNull())
             {
-                float anchoCuadro = spriteEnergia.width() / static_cast<float>(CUADROS_ENERGIA);
-                int cuadro = static_cast<int>(tiempoItems / 0.1f);
-                QPixmap botella = spriteEnergia.copy(static_cast<int>(cuadro * anchoCuadro), 0,
-                                                     static_cast<int>(anchoCuadro), spriteEnergia.height())
-                                      .scaledToHeight(30);
-                agregarMovil(new QGraphicsPixmapItem(botella), x - botella.width() / 2, y - botella.height());
-            }
-            else if (s->getTipo() == TipoSuministro::Municion && !spriteMunicion.isNull())
-            {
-                QGraphicsPixmapItem *caja = new QGraphicsPixmapItem(spriteMunicion);
-                caja->setOffset(-spriteMunicion.width() / 2.0, -spriteMunicion.height());
-                caja->setScale(ESCALA_MUNICION);
-                agregarMovil(caja, x, y);
+                QGraphicsPixmapItem *item = new QGraphicsPixmapItem(sprite);
+                item->setOffset(-sprite.width() / 2.0, -sprite.height());   // pies en (x, y)
+                item->setScale(ESCALA_ITEM);
+                agregarMovil(item, x, y);
             }
             else
             {
@@ -480,29 +561,37 @@ void GestorJuego::dibujarNivel2()
         {
             if (!spriteTorreta.isNull())
             {
-                // el offset pone el pivote del sprite en el origen del item, y la rotación gira alrededor de él
                 QGraphicsPixmapItem *torreta = new QGraphicsPixmapItem(spriteTorreta);
                 torreta->setOffset(-PIVOTE_TORRETA_X, -PIVOTE_TORRETA_Y);
                 torreta->setScale(ESCALA_TORRETA);
-                // el cañón del sprite mira a la izquierda (180°), por eso se resta 180
                 torreta->setRotation(a->getAngulo() * GRADOS_POR_RADIAN - 180.0f);
                 agregarMovil(torreta, x, y);
             }
-            else
-            {
-                agregarMovil(new ItemFigura(Forma::Elipse, 28, 28, Qt::gray), x, y);
-                float angulo = a->getAngulo();
-                agregarMovil(new ItemFigura(Forma::Rectangulo, 40, 4, Qt::gray),
-                             x + 20 * std::cos(angulo), y + 20 * std::sin(angulo))
-                    ->setRotation(angulo * GRADOS_POR_RADIAN);
-            }
         }
     }
+    // los policias que ya no estan vivos empiezan su animacion de muerte
+    for (auto it = ultimosPolicias.begin(); it != ultimosPolicias.end(); )
+    {
+        if (vivos.contains(it.key())) { ++it; continue; }
+        muertes.append(QVector4D(it.value().x(), it.value().y(), 0.0f, it.value().z()));
+        it = ultimosPolicias.erase(it);
+    }
 
-    Rambo *rambo = nivel2->getRambo();
-    hud->setText(QString("Salud: %1   Municion: %2   Fatiga: %3   Horda: %4")
+    for (int i = muertes.size() - 1; i >= 0; --i)
+    {
+        muertes[i].setZ(muertes[i].z() + PASO);
+        float t = muertes[i].z();
+        if (t >= DURACION_CUERPO) { muertes.removeAt(i); continue; }
+
+        int n = cuadrosMuerte.size();
+        int cuadro = qMin(n - 1, static_cast<int>(t / DURACION_ANIM_MUERTE * n));
+        agregarImagen(cuadroEn(cuadrosMuerte, cuadro), ESCALA_POLICIA,
+                      muertes[i].w() > 0.5f, muertes[i].x(), muertes[i].y());
+    }
+    hud->setText(QString("Salud: %1   Municion: %2   Fatiga: %3   Horda: %4   Dificultad: %5")
                      .arg(rambo->getSalud()).arg(rambo->getMunicion())
-                     .arg(static_cast<int>(rambo->getFatiga())).arg(nivel2->getNumeroHorda()));
+                     .arg(static_cast<int>(rambo->getFatiga())).arg(nivel2->getNumeroHorda())
+                     .arg(nombreDificultad(dificultad)));
 }
 
 int GestorJuego::cuadroRambo() const
@@ -556,13 +645,40 @@ void GestorJuego::restablecerCamara()
     vista->centerOn(ANCHO_ESCENA / 2.0, ALTO_ESCENA / 2.0);
 }
 
-void GestorJuego::agregarCuadro(const QPixmap &tira, int cuadro, int ancho, int alto,
+// dibuja un cuadro de una tira horizontal, con los pies (centro abajo) en (x, y)
+void GestorJuego::agregarCuadro(const QPixmap &tira, int cuadro, int cuadros,
                                 float escala, bool espejo, float x, float y)
 {
-    QPixmap parte = tira.copy(cuadro * ancho, 0, ancho, alto);
+    if (tira.isNull()) return;
+    float anchoF = tira.width() / static_cast<float>(cuadros);
+    int ancho = static_cast<int>(anchoF);
+    QPixmap parte = tira.copy(static_cast<int>(cuadro * anchoF), 0, ancho, tira.height());
     if (espejo) parte = parte.transformed(QTransform().scale(-1, 1));
     QGraphicsPixmapItem *item = new QGraphicsPixmapItem(parte);
-    item->setOffset(-ancho / 2.0, -alto);
+    item->setOffset(-ancho / 2.0, -parte.height());
+    item->setScale(escala);
+    agregarMovil(item, x, y);
+}
+
+QVector<QPixmap> GestorJuego::cargarCuadros(const QString &prefijo, int cantidad)
+{
+    QVector<QPixmap> cuadros;
+    for (int i = 1; i <= cantidad; ++i)
+    {
+        QPixmap p(prefijo + QString::number(i) + ".png");
+        if (p.isNull()) qWarning("No se pudo cargar %s%d.png", qPrintable(prefijo), i);
+        cuadros.append(p);
+    }
+    return cuadros;
+}
+
+// una imagen suelta con los pies (centro abajo) en (x, y)
+void GestorJuego::agregarImagen(const QPixmap &imagen, float escala, bool espejo, float x, float y)
+{
+    if (imagen.isNull()) return;
+    QPixmap img = espejo ? imagen.transformed(QTransform().scale(-1, 1)) : imagen;
+    QGraphicsPixmapItem *item = new QGraphicsPixmapItem(img);
+    item->setOffset(-img.width() / 2.0, -img.height());
     item->setScale(escala);
     agregarMovil(item, x, y);
 }
