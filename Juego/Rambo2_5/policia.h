@@ -29,6 +29,7 @@ private:
     float limiteDer;
     float gravedadGranada;   // la misma del modelo de la granada, para calcular el angulo
     float velocidadCaida;    // mayor que cero mientras cae
+    bool caminando;
 
 public:
     Policia(float x, float y, int salud, float velocidad,
@@ -46,8 +47,8 @@ public:
     void setLimites(float izq, float der);
     void setGravedadGranada(float g);
     void caer(float dt, float superficie);
-    float getTiempoDesdeAtaque(float tiempoAtaque) const;   // devuelve tiempoAtaque
-    bool estaCaminando() const;           // true si mover() lo desplazó este paso
+    float getTiempoAtaque() const;
+    bool estaCaminando() const;
 };
 
 #endif

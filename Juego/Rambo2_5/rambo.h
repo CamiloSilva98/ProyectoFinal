@@ -35,6 +35,8 @@ private:
     float tiempoQuieto;
     float tiempoRuido;
     bool ruidoPendiente;
+    int saludMax;
+
 
 public:
     Rambo(float x, float y, int salud, int municion, float velocidad, float radio = 0.0f);
@@ -68,6 +70,7 @@ public:
     void soltarSuelo();
     void setVelocidadSalto(float v);
     void topeTecho(float yMinimo, float altoCuerpo);
+    void curar(int cantidad);
 };
 
 #endif

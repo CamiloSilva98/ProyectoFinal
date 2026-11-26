@@ -3,7 +3,7 @@
 Proyectil::Proyectil(float x, float y, float vx, float vy, int dano,
                      ModeloFisico *modelo, ModeloRebote *rebote, int rebotesMax)
     : entidad(x, y, 1), velocidadX(vx), velocidadY(vy), dano(dano),
-    rebotesMax(rebotesMax), rebotesHechos(0), modelo(modelo), rebote(rebote), deRambo(false){}
+    rebotesMax(rebotesMax), rebotesHechos(0), modelo(modelo), rebote(rebote), deRambo(false), deTorreta(false){}
 
 void Proyectil::actualizar(float dt)
 {
@@ -35,3 +35,6 @@ float Proyectil::getVelocidadY() const { return velocidadY; }
 
 void Proyectil::setDeRambo(bool valor) { deRambo = valor; }
 bool Proyectil::esDeRambo() const { return deRambo; }
+
+void Proyectil::setDeTorreta(bool valor) { deTorreta = valor; }
+bool Proyectil::esDeTorreta() const { return deTorreta; }

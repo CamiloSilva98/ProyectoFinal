@@ -34,7 +34,9 @@ Proyectil *ArmaOscilante::disparar()
     float puntaY = y + LARGO_CANON * std::sin(anguloActual);
     float vx = velocidadProyectil * std::cos(anguloActual);
     float vy = velocidadProyectil * std::sin(anguloActual);
-    return new Proyectil(puntaX, puntaY, vx, vy, danoProyectil, modeloProyectil, rebote, 1);
+    Proyectil *p = new Proyectil(puntaX, puntaY, vx, vy, danoProyectil, modeloProyectil, rebote, 1);
+    p->setDeTorreta(true);
+    return p;
 }
 
 float ArmaOscilante::getAngulo() const { return anguloActual; }

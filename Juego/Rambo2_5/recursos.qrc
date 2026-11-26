@@ -6,5 +6,25 @@
         <file>recursos/sprites/fondo.png</file>
         <file>recursos/sprites/municion.png</file>
         <file>recursos/sprites/torreta.png</file>
+        <file>recursos/sprites/balatorreta.png</file>
+        <file>recursos/sprites/enemigoshoot.png</file>
+        <file>recursos/sprites/granada.png</file>
+        <file>recursos/sprites/explosion.png</file>
+        <file>recursos/sprites/enemigo1.png</file>
+        <file>recursos/sprites/enemigo2.png</file>
+        <file>recursos/sprites/enemigo3.png</file>
+        <file>recursos/sprites/enemigo4.png</file>
+        <file>recursos/sprites/enemigo5.png</file>
+        <file>recursos/sprites/enemigo6.png</file>
+        <file>recursos/sprites/enemigo7.png</file>
+        <file>recursos/sprites/enemigosMuerte1.png</file>
+        <file>recursos/sprites/enemigosMuerte2.png</file>
+        <file>recursos/sprites/enemigosMuerte3.png</file>
+        <file>recursos/sprites/granadero1.png</file>
+        <file>recursos/sprites/granadero2.png</file>
+        <file>recursos/sprites/granadero3.png</file>
+        <file>recursos/sprites/granadero4.png</file>
+        <file>recursos/sprites/granadero5.png</file>
+        <file>recursos/sprites/granadero6.png</file>
     </qresource>
 </RCC>

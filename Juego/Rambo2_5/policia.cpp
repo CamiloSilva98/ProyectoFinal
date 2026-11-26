@@ -5,6 +5,7 @@
 #include "granada.h"
 
 static const float GRAVEDAD_CAIDA = 1200.0f;
+static const float TOLERANCIA_NIVEL = 60.0f;
 
 Policia::Policia(float x, float y, int salud, float velocidad,
                  entidad *objetivo, Nivel *nivel, ModeloFisico *modeloBomba)
@@ -12,7 +13,7 @@ Policia::Policia(float x, float y, int salud, float velocidad,
     modeloBomba(modeloBomba), rangoAtaque(600.0f), intervaloAtaque(2.0f),
     tiempoAtaque(0.0f), velocidadBombaX(250.0f), velocidadBombaY(300.0f), danoBomba(15),
     tipo(TipoPolicia::Granadero), modeloBala(nullptr), reboteGranada(nullptr),
-    limiteIzq(0.0f), limiteDer(100000.0f), gravedadGranada(500.0f), velocidadCaida(0.0f)
+    limiteIzq(0.0f), limiteDer(100000.0f), gravedadGranada(500.0f), velocidadCaida(0.0f), caminando(false)
 {
 }
 
@@ -30,27 +31,45 @@ void Policia::actualizar(float dt)
 // se acerca a rambo, el fusilero ademas baja de su base si rambo esta mas abajo
 void Policia::mover(float dt)
 {
+    caminando = false;
     if (objetivo == nullptr) return;
     if (velocidadCaida > 0.0f) return;   // mientras cae no camina
 
     float dx = objetivo->getX() - x;
     float dir = (dx > 0.0f) ? 1.0f : -1.0f;
+    float dy = objetivo->getY() - y;   // positivo si rambo esta mas abajo
 
-    // rambo esta en una base mas baja y fuera del ancho de esta base
-    bool baja = (tipo == TipoPolicia::Fusilero && objetivo->getY() - y > 60.0f
-                 && (objetivo->getX() < limiteIzq || objetivo->getX() > limiteDer));
-    if (baja)
+    if (tipo == TipoPolicia::Fusilero)
     {
-        x += dir * velocidad * dt;   // sin limites, para salirse de la base y caer
-        return;
+        if (dy > TOLERANCIA_NIVEL)
+        {
+            // rambo esta abajo: camina hacia el borde para caer, sin limites
+            float d = dir;
+            if (std::fabs(dx) < 20.0f) d = (x - limiteIzq < limiteDer - x) ? -1.0f : 1.0f;
+            caminando = true;
+            x += d * velocidad * dt;
+            return;
+        }
+        if (dy < -TOLERANCIA_NIVEL)
+        {
+            // rambo esta arriba: se pone debajo de el y espera
+            if (std::fabs(dx) > 20.0f)
+            {
+                caminando = true;
+                x += dir * velocidad * dt;
+                if (x < limiteIzq) x = limiteIzq;
+                if (x > limiteDer) x = limiteDer;
+            }
+            return;
+        }
     }
 
     if (std::fabs(dx) <= rangoAtaque * 0.5f) return;
+    caminando = true;
     x += dir * velocidad * dt;
     if (x < limiteIzq) x = limiteIzq;
     if (x > limiteDer) x = limiteDer;
 }
-
 // el granadero lanza una granada en parabola, el fusilero dispara recto hacia rambo
 void Policia::atacar(entidad &blanco)
 {
@@ -87,21 +106,14 @@ void Policia::atacar(entidad &blanco)
     }
     else if (modeloBala != nullptr)
     {
-        // apunta al centro del cuerpo de rambo, aunque este en otra base
-        float origenX = x + dir * 45.0f;
-        float origenY = y - 75.0f;
-        float dx = blanco.getX() - origenX;
-        float dy = (blanco.getY() - 63.0f) - origenY;
-        float d = std::sqrt(dx * dx + dy * dy);
-        if (d < 1.0f) d = 1.0f;
-
+        // el fusilero solo dispara al frente, en horizontal
         // en el fusilero velocidadBombaX es la rapidez de la bala
-        nivel->agregarEntidad(new Proyectil(origenX, origenY, velocidadBombaX * dx / d,
-                                            velocidadBombaX * dy / d, danoBomba, modeloBala));
+        if (std::fabs(blanco.getY() - y) > TOLERANCIA_NIVEL) return;   // solo si lo tiene enfrente
+        nivel->agregarEntidad(new Proyectil(x + dir * 45.0f, y - 75.0f,
+                                            dir * velocidadBombaX, 0.0f, danoBomba, modeloBala));
     }
     tiempoAtaque = 0.0f;
 }
-
 void Policia::setParametrosAtaque(float rango, float intervalo, float velX, float velY, int dano)
 {
     rangoAtaque = rango;
@@ -143,3 +155,6 @@ void Policia::caer(float dt, float superficie)
 }
 
 void Policia::setGravedadGranada(float g) { gravedadGranada = g; }
+
+float Policia::getTiempoAtaque() const { return tiempoAtaque; }
+bool Policia::estaCaminando() const { return caminando; }
