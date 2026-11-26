@@ -14,6 +14,10 @@
 #include "armaoscilante.h"
 #include <QFont>
 #include <QGraphicsPixmapItem>
+#include <QGraphicsRectItem>
+#include <QGraphicsLineItem>
+#include <QGraphicsTextItem>
+#include <QLinearGradient>
 #include <QPainter>
 #include <algorithm>
 #include <cmath>
@@ -21,6 +25,8 @@
 #include <QTransform>
 
 static const float PASO = 0.016f;
+static const float COLUMNA_MENU_X = 790.0f;
+static const float ANCHO_COLUMNA_MENU = 440.0f;
 static const float GRADOS_POR_RADIAN = 57.29578f;
 static const int LADO_RAMBO = 52;
 static const int LADO_GUARDIA = 48;
@@ -46,6 +52,12 @@ static const float DURACION_POSE_DISPARO = 0.3f;
 static const float DURACION_POSE_LANZAR = 0.5f;
 static const float DURACION_ANIM_MUERTE = 0.8f;   // lo que tarda en caer
 static const float DURACION_CUERPO = 1.2f;        // luego desaparece
+static const float LETRAS_POR_SEGUNDO = 45.0f;
+static const float ESPERA_LECTURA = 3.0f;
+static const float DURACION_NEGRO = 5.0f;
+static const float DURACION_DESTELLO = 0.9f;
+static const float ANCHO_LUZ_PATRULLA = 220.0f;
+static const int GOTAS_DE_LLUVIA = 90;
 
 // la dificultad escogida tambien se aplica al nivel 2
 static float factorNivel2(Dificultad d)
@@ -56,14 +68,19 @@ static float factorNivel2(Dificultad d)
 }
 
 GestorJuego::GestorJuego(QGraphicsScene *escena, QObject *parent)
-    : QObject(parent), escena(escena), pantalla(Pantalla::Menu), nivelActual(1), dificultad(Dificultad::Normal),
+    : QObject(parent), escena(escena), pantalla(Pantalla::Cinematica), nivelActual(1), dificultad(Dificultad::Normal),
     nivel1(nullptr), nivel2(nullptr), hud(nullptr),
+    faseCine(FaseCinematica::Dialogo), lineaCine(0), tiempoCine(0.0f),
     direccion(1.0f), tiempoAnim(0.0f), tiempoHerido(0.0f), tiempoItems(0.0f), saludAnterior(0),
     animRambo(0.0f), animGuardias(0.0f), tiempoApuntando(0.0f), anguloRambo(0.0f), camX(0.0f)
 {
     spritesRambo.load(":/sprites/recursos/sprites/rambo_sprites.png");
     spriteEnergia.load(":/sprites/recursos/sprites/item.png");
     spriteBala.load(":/sprites/recursos/sprites/bala.png");
+    fondoMenu.load(":/sprites/recursos/sprites/fondo_menu.png");
+    imagenesCine[0].load(":/sprites/recursos/sprites/cine_1_cuarto.png");
+    imagenesCine[1].load(":/sprites/recursos/sprites/cine_2_cinta.png");
+    imagenesCine[2].load(":/sprites/recursos/sprites/cine_3_arco.png");
     fondoNivel1.load(":/sprites/recursos/sprites/fondo_nivel1.png");
     spriteCarroCampero.load(":/sprites/recursos/sprites/carro_campero.png");
     spriteCarroSedan.load(":/sprites/recursos/sprites/carro_sedan.png");
@@ -93,6 +110,9 @@ GestorJuego::GestorJuego(QGraphicsScene *escena, QObject *parent)
     if (spritesRambo.isNull()) qWarning("No se pudo cargar rambo_sprites.png, revisar recursos.qrc");
     if (spriteEnergia.isNull()) qWarning("No se pudo cargar item.png, revisar recursos.qrc");
     if (spriteBala.isNull()) qWarning("No se pudo cargar bala.png, revisar recursos.qrc");
+    if (fondoMenu.isNull()) qWarning("No se pudo cargar fondo_menu.png, revisar recursos.qrc");
+    if (imagenesCine[0].isNull() || imagenesCine[1].isNull() || imagenesCine[2].isNull())
+        qWarning("No se pudieron cargar las imagenes de la cinematica, revisar recursos.qrc");
     if (fondoNivel1.isNull() || spriteCarroCampero.isNull() || spriteCarroSedan.isNull()
         || spriteMuroVertical.isNull() || spriteMuroHorizontal.isNull() || spriteExtintor.isNull())
         qWarning("No se pudieron cargar las imagenes del nivel 1, revisar recursos.qrc");
@@ -111,7 +131,16 @@ GestorJuego::GestorJuego(QGraphicsScene *escena, QObject *parent)
     connect(timer, &QTimer::timeout, this, &GestorJuego::actualizar);
     timer->start(16);
 
-    mostrarMenu();
+    guionCine.append({0, "LÍDER", "El asalto ya empezó, John. Estamos dentro, pero la policía acordonó toda la "
+                                  "Plaza de Bolívar. El acceso principal es un suicidio."});
+    guionCine.append({1, "RAMBO", "Siempre hay otra entrada."});
+    guionCine.append({0, "LÍDER", "El parqueadero subterráneo. Está lleno de patrullas y francotiradores "
+                                  "custodiando la rampa. Si logras despejarlo y entrar, podrás reforzar "
+                                  "nuestra defensa desde adentro."});
+    guionCine.append({2, "RAMBO", "Una vez que entre, nadie más va a cruzar esa puerta."});
+    guionCine.append({1, "LÍDER", "Haz que retrocedan, Rambo. Hoy escribimos otra historia."});
+
+    iniciarCinematica();
 }
 
 GestorJuego::~GestorJuego()
@@ -126,6 +155,10 @@ void GestorJuego::teclaPresionada(int tecla)
 
     switch (pantalla)
     {
+    case Pantalla::Cinematica:
+        if (tecla == Qt::Key_Escape) mostrarMenu();
+        else if (enter || tecla == Qt::Key_Space) pasarCinematica();
+        break;
     case Pantalla::Menu:
         if (tecla == Qt::Key_1 || enter) iniciarNivel1();
         else if (tecla == Qt::Key_2) iniciarNivel2();
@@ -156,6 +189,17 @@ void GestorJuego::teclaSoltada(int tecla)
 
 void GestorJuego::clic(QPointF punto, Qt::MouseButton boton)
 {
+    if (pantalla == Pantalla::Cinematica)
+    {
+        if (boton == Qt::LeftButton) pasarCinematica();
+        return;
+    }
+    if (pantalla == Pantalla::Menu && boton == Qt::LeftButton)
+    {
+        if (botonNivel1.contains(punto)) iniciarNivel1();
+        else if (botonNivel2.contains(punto)) iniciarNivel2();
+        return;
+    }
     if (pantalla != Pantalla::JugandoNivel1) return;
 
     Rambo *rambo = nivel1->getRambo();
@@ -208,7 +252,8 @@ QString GestorJuego::nombreDificultad(Dificultad dificultad)
 
 void GestorJuego::actualizar()
 {
-    if (pantalla == Pantalla::JugandoNivel1) actualizarNivel1();
+    if (pantalla == Pantalla::Cinematica) actualizarCinematica();
+    else if (pantalla == Pantalla::JugandoNivel1) actualizarNivel1();
     else if (pantalla == Pantalla::JugandoNivel2) actualizarNivel2();
 }
 
@@ -293,21 +338,191 @@ void GestorJuego::actualizarNivel2()
     seguirConCamara();
 }
 
+void GestorJuego::iniciarCinematica()
+{
+    limpiarEscena();
+    pantalla = Pantalla::Cinematica;
+    faseCine = FaseCinematica::Dialogo;
+    lineaCine = 0;
+    tiempoCine = 0.0f;
+    escena->setBackgroundBrush(Qt::black);
+}
+
+void GestorJuego::pasarCinematica()
+{
+    if (faseCine == FaseCinematica::Dialogo)
+    {
+        float tiempoEscritura = guionCine[lineaCine].texto.size() / LETRAS_POR_SEGUNDO;
+        if (tiempoCine < tiempoEscritura)
+        {
+            tiempoCine = tiempoEscritura;
+            return;
+        }
+    }
+    avanzarCinematica();
+}
+
+void GestorJuego::avanzarCinematica()
+{
+    tiempoCine = 0.0f;
+    if (faseCine == FaseCinematica::Dialogo)
+    {
+        lineaCine++;
+        if (lineaCine >= guionCine.size()) faseCine = FaseCinematica::Negro;
+    }
+    else if (faseCine == FaseCinematica::Negro)
+    {
+        faseCine = FaseCinematica::Destello;
+    }
+}
+
+void GestorJuego::actualizarCinematica()
+{
+    tiempoCine += PASO;
+
+    if (faseCine == FaseCinematica::Dialogo)
+    {
+        float tiempoEscritura = guionCine[lineaCine].texto.size() / LETRAS_POR_SEGUNDO;
+        if (tiempoCine > tiempoEscritura + ESPERA_LECTURA) avanzarCinematica();
+    }
+    else if (faseCine == FaseCinematica::Negro && tiempoCine > DURACION_NEGRO)
+    {
+        avanzarCinematica();
+    }
+    else if (faseCine == FaseCinematica::Destello && tiempoCine > DURACION_DESTELLO)
+    {
+        mostrarMenu();
+        return;
+    }
+
+    borrarMovibles();
+    if (faseCine == FaseCinematica::Dialogo) dibujarDialogo();
+    else if (faseCine == FaseCinematica::Negro) dibujarNegro();
+    else dibujarDestello();
+}
+
+void GestorJuego::dibujarDialogo()
+{
+    const LineaCinematica &linea = guionCine[lineaCine];
+
+    // zoom lento para que la imagen no se vea congelada
+    QGraphicsPixmapItem *imagen = crearImagen(imagenesCine[linea.imagen]);
+    imagen->setScale(1.0f + 0.01f * std::min(tiempoCine, 8.0f));
+    agregarMovil(imagen, ANCHO_ESCENA / 2, ALTO_ESCENA / 2);
+
+    // la lampara parpadea un poco y cada linea entra desde negro
+    float parpadeo = 0.08f * std::max(0.0f, std::sin(tiempoCine * 9.0f) * std::sin(tiempoCine * 37.0f));
+    float entrada = std::max(0.0f, 1.0f - tiempoCine / 0.4f);
+    QGraphicsRectItem *sombra = new QGraphicsRectItem(0, 0, ANCHO_ESCENA, ALTO_ESCENA);
+    sombra->setPen(Qt::NoPen);
+    sombra->setBrush(Qt::black);
+    sombra->setOpacity(std::min(1.0f, parpadeo + entrada));
+    agregarMovil(sombra, 0, 0);
+
+    QGraphicsRectItem *caja = new QGraphicsRectItem(40, 520, ANCHO_ESCENA - 80, 170);
+    caja->setPen(QPen(QColor(255, 255, 255, 140), 2));
+    caja->setBrush(QColor(0, 0, 0, 190));
+    agregarMovil(caja, 0, 0);
+
+    QGraphicsSimpleTextItem *quien = new QGraphicsSimpleTextItem(linea.quien);
+    quien->setFont(QFont("Arial", 18, QFont::Bold));
+    quien->setBrush(linea.quien == "RAMBO" ? QColor(230, 70, 60) : QColor(230, 200, 120));
+    agregarMovil(quien, 64, 530);
+
+    // el texto no escrito se pinta transparente para que las palabras no salten de renglon al escribir
+    int letras = std::min(int(tiempoCine * LETRAS_POR_SEGUNDO), int(linea.texto.size()));
+    QString escrito = linea.texto.left(letras).toHtmlEscaped();
+    QString pendiente = linea.texto.mid(letras).toHtmlEscaped();
+    QGraphicsTextItem *texto = new QGraphicsTextItem();
+    texto->setFont(QFont("Arial", 18));
+    texto->setDefaultTextColor(Qt::white);
+    texto->setTextWidth(ANCHO_ESCENA - 130);
+    texto->setHtml(escrito + "<span style=\"color:transparent\">" + pendiente + "</span>");
+    agregarMovil(texto, 58, 568);
+
+    QGraphicsSimpleTextItem *ayuda = new QGraphicsSimpleTextItem("Enter: continuar    Esc: saltar");
+    ayuda->setFont(QFont("Arial", 11));
+    ayuda->setBrush(Qt::gray);
+    agregarMovil(ayuda, ANCHO_ESCENA - 60 - ayuda->boundingRect().width(), 696);
+}
+
+static QGraphicsRectItem *crearLuzPatrulla(const QColor &color, float borde, float sentido)
+{
+    QLinearGradient degradado(borde, 0, borde + sentido * ANCHO_LUZ_PATRULLA, 0);
+    QColor luz = color;
+    luz.setAlpha(120);
+    degradado.setColorAt(0.0, luz);
+    luz.setAlpha(0);
+    degradado.setColorAt(1.0, luz);
+
+    QGraphicsRectItem *rect = new QGraphicsRectItem(std::min(borde, borde + sentido * ANCHO_LUZ_PATRULLA), 0,
+                                                    ANCHO_LUZ_PATRULLA, ALTO_ESCENA);
+    rect->setPen(Qt::NoPen);
+    rect->setBrush(degradado);
+    return rect;
+}
+
+void GestorJuego::dibujarNegro()
+{
+    // las patrullas se simulan con luces roja y azul que se turnan en los bordes
+    bool rojoIzquierda = std::fmod(tiempoCine, 0.7f) < 0.35f;
+    QColor rojo(230, 30, 30);
+    QColor azul(40, 80, 240);
+    agregarMovil(crearLuzPatrulla(rojoIzquierda ? rojo : azul, 0, 1), 0, 0);
+    agregarMovil(crearLuzPatrulla(rojoIzquierda ? azul : rojo, ANCHO_ESCENA, -1), 0, 0);
+
+    for (int i = 0; i < GOTAS_DE_LLUVIA; ++i)
+    {
+        float x = std::fmod(i * 137.0f + tiempoCine * 120.0f, ANCHO_ESCENA + 40.0f);
+        float y = std::fmod(i * 71.0f + tiempoCine * (700.0f + (i % 5) * 80.0f), ALTO_ESCENA + 40.0f) - 20.0f;
+        QGraphicsLineItem *gota = new QGraphicsLineItem(x, y, x - 6, y + 22);
+        gota->setPen(QPen(QColor(150, 170, 200, 110), 1.5));
+        agregarMovil(gota, 0, 0);
+    }
+}
+
+void GestorJuego::dibujarDestello()
+{
+    agregarMovil(crearImagen(fondoMenu), ANCHO_ESCENA / 2, ALTO_ESCENA / 2);
+
+    float opacidad = 1.0f;
+    if (tiempoCine > 0.12f) opacidad = std::max(0.0f, 1.0f - (tiempoCine - 0.12f) / (DURACION_DESTELLO - 0.12f));
+    QGraphicsRectItem *blanco = new QGraphicsRectItem(0, 0, ANCHO_ESCENA, ALTO_ESCENA);
+    blanco->setPen(Qt::NoPen);
+    blanco->setBrush(Qt::white);
+    blanco->setOpacity(opacidad);
+    agregarMovil(blanco, 0, 0);
+}
+
 void GestorJuego::mostrarMenu()
 {
     descartarNiveles();
     limpiarEscena();
     pantalla = Pantalla::Menu;
-    escena->setBackgroundBrush(QColor(20, 20, 30));
+    escena->setBackgroundBrush(fondoMenu.isNull() ? QBrush(QColor(20, 20, 30)) : QBrush(fondoMenu));
 
-    agregarTexto("RAMBO", 80, 60, Qt::white);
-    agregarTexto("1 o Enter: Nivel 1 (infiltracion)", 240, 24, Qt::white);
-    agregarTexto("2: Nivel 2 (hordas)", 285, 24, Qt::white);
-    agregarTexto("Dificultad: " + nombreDificultad(dificultad) + "  (se cambia en el menu de arriba, vale para los dos niveles)", 335, 20, Qt::yellow);
-    agregarTexto("Nivel 1:  WASD mover   Shift correr   clic izquierdo flecha   clic derecho piedra", 400, 18, Qt::lightGray);
-    agregarTexto("Llega a la zona verde sin que te vean. Los guardias oyen el ruido.", 430, 18, Qt::lightGray);
-    agregarTexto("Nivel 2:  A y D mover   Espacio saltar   J disparar", 490, 18, Qt::lightGray);
-    agregarTexto("Sobrevive las tres hordas. Esc vuelve al menu.", 520, 18, Qt::lightGray);
+    QFont fuenteTitulo("Arial", 80, QFont::Bold);
+    QGraphicsSimpleTextItem *sombraTitulo = escena->addSimpleText("RAMBO", fuenteTitulo);
+    sombraTitulo->setBrush(Qt::black);
+    QGraphicsSimpleTextItem *titulo = escena->addSimpleText("RAMBO", fuenteTitulo);
+    titulo->setBrush(QColor(220, 40, 40));
+    float xTitulo = COLUMNA_MENU_X + (ANCHO_COLUMNA_MENU - titulo->boundingRect().width()) / 2;
+    sombraTitulo->setPos(xTitulo + 4, 64);
+    titulo->setPos(xTitulo, 60);
+
+    botonNivel1 = QRectF(COLUMNA_MENU_X, 250, ANCHO_COLUMNA_MENU, 70);
+    botonNivel2 = QRectF(COLUMNA_MENU_X, 335, ANCHO_COLUMNA_MENU, 70);
+    agregarCaja(botonNivel1, "1 o Enter: Nivel 1 (infiltracion)", 20, Qt::white);
+    agregarCaja(botonNivel2, "2: Nivel 2 (hordas)", 20, Qt::white);
+    agregarCaja(QRectF(COLUMNA_MENU_X, 420, ANCHO_COLUMNA_MENU, 60),
+                "Dificultad: " + nombreDificultad(dificultad) + "\n(se cambia en el menu de arriba, vale para ambos)",
+                13, Qt::yellow);
+    agregarCaja(QRectF(COLUMNA_MENU_X, 495, ANCHO_COLUMNA_MENU, 195),
+                "Nivel 1: WASD mover, Shift correr\nclic izquierdo flecha, clic derecho piedra\n"
+                "Llega a la zona verde sin que te vean\n\n"
+                "Nivel 2: A y D mover, Espacio saltar, J disparar\nSobrevive las tres hordas\n\n"
+                "Esc vuelve al menu",
+                13, Qt::lightGray);
 }
 
 void GestorJuego::iniciarNivel1()
@@ -337,6 +552,7 @@ void GestorJuego::iniciarNivel2()
     descartarNiveles();
     limpiarEscena();
     nivelActual = 2;
+    escena->setBackgroundBrush(QColor(20, 20, 30));
 
     nivel2 = new Nivel2(ANCHO_NIVEL2, ALTO_ESCENA, 650);
     nivel2->setDificultad(factorNivel2(dificultad));
@@ -422,6 +638,22 @@ void GestorJuego::agregarTexto(const QString &texto, float y, int tamano, const 
     QGraphicsSimpleTextItem *item = escena->addSimpleText(texto, QFont("Arial", tamano));
     item->setBrush(color);
     item->setPos((ANCHO_ESCENA - item->boundingRect().width()) / 2, y);
+}
+
+void GestorJuego::agregarCaja(const QRectF &caja, const QString &texto, int tamano, const QColor &color)
+{
+    escena->addRect(caja, QPen(QColor(255, 255, 255, 140), 2), QBrush(QColor(0, 0, 0, 170)));
+    QGraphicsSimpleTextItem *item = escena->addSimpleText(texto, QFont("Arial", tamano));
+    item->setBrush(color);
+
+    // la fuente cambia de tamano segun el sistema, asi que el texto se encoge hasta caber en la caja
+    float ancho = item->boundingRect().width();
+    float alto = item->boundingRect().height();
+    float anchoUtil = caja.width() - 24;
+    float altoUtil = caja.height() - 12;
+    float escala = std::min(1.0f, std::min(anchoUtil / ancho, altoUtil / alto));
+    item->setScale(escala);
+    item->setPos(caja.center().x() - ancho * escala / 2, caja.center().y() - alto * escala / 2);
 }
 
 void GestorJuego::crearHud()
