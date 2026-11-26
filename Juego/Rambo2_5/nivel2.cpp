@@ -4,43 +4,73 @@
 #include <cstdlib>
 #include <cmath>
 
-static const float RADIO_IMPACTO = 40.0f;
 
-// dos entidades estan cerca si la distancia entre centros es menor al radio de impacto
-static bool cerca(const entidad &a, const entidad &b)
+// tamano del cuerpo de los personajes en pantalla, igual al sprite de rambo escalado
+static const float ANCHO_CUERPO = 45.0f;
+static const float ALTO_CUERPO = 126.0f;
+static const float RADIO_PROYECTIL = 6.0f;
+// la dificultad escogida tambien se aplica al nivel 2
+
+
+
+// el cuerpo es un rectangulo con los pies en (x, y) y el proyectil un punto con un radio pequeno
+static bool golpea(const entidad &proyectil, const entidad &cuerpo)
 {
-    float dx = a.getX() - b.getX();
-    float dy = a.getY() - b.getY();
-    return dx * dx + dy * dy <= RADIO_IMPACTO * RADIO_IMPACTO;
+    float dx = std::fabs(proyectil.getX() - cuerpo.getX());
+    float dy = proyectil.getY() - cuerpo.getY();
+    return dx <= ANCHO_CUERPO / 2.0f + RADIO_PROYECTIL
+           && dy >= -(ALTO_CUERPO + RADIO_PROYECTIL)
+           && dy <= RADIO_PROYECTIL;
+}
+
+// la explosion alcanza al cuerpo si su centro queda dentro del radio
+static bool alcanzaExplosion(const Granada &g, const entidad &cuerpo)
+{
+    float dx = g.getX() - cuerpo.getX();
+    float dy = g.getY() - (cuerpo.getY() - ALTO_CUERPO / 2.0f);
+    float r = g.getRadioExplosion();
+    return dx * dx + dy * dy <= r * r;
 }
 
 Nivel2::Nivel2(float ancho, float alto, float ySuelo)
     : Nivel(0.0f), anchoNivel(ancho), altoNivel(alto), ySuelo(ySuelo),
     rambo(nullptr), arma(nullptr),
-    modeloSalto(600.0f), modeloBala(0.0f), modeloBomba(500.0f),
-    reboteBala(0.5f), oscilador(0.6f, 1.5f),
-    numeroHorda(1), tiempoHorda(0.0f), tiempoSpawn(0.0f),
-    generando(false), ladoSpawn(false),
-    intervaloArma(2.0f), tiempoArma(0.0f), probSuministro(35),
+    modeloSalto(700.0f), modeloBala(0.0f), modeloBomba(500.0f),
+    reboteBala(0.5f), reboteGranada(0.45f), oscilador(0.6f, 1.5f),
+    numeroHorda(1), tiempoHorda(0.0f), tiempoSpawn(3.0f),
+    generando(false),
+    intervaloArma(1.5f), tiempoArma(0.0f), probSuministro(35), factorDificultad(1.0f),
     victoria(false), derrota(false)
 {
     // duracion, intervalo de aparicion, maximo en pantalla, salud, velocidad, intervalo de ataque
-    hordas.push_back({20.0f, 2.5f, 3, 30, 80.0f, 2.5f});
+    hordas.push_back({20.0f, 2.5f, 3, 30, 80.0f, 2.5f});//3,4,6
     hordas.push_back({25.0f, 2.0f, 4, 40, 100.0f, 2.0f});
     hordas.push_back({30.0f, 1.5f, 6, 50, 120.0f, 1.5f});
+    // plataformas, medidas segun el fondo actual: balcones arriba y dos bases intermedias
+    plataformas.push_back({0.0f, 478.0f, 175.0f});
+    plataformas.push_back({1437.0f, 1916.0f, 175.0f});
+    plataformas.push_back({172.0f, 660.0f, 375.0f});
+    plataformas.push_back({1270.0f, 1745.0f, 375.0f});
+
+    puntos.clear();
+    puntos.push_back({   0.0f, 745.0f,    0.0f, 1916.0f});   // suelo, lado izquierdo
+    puntos.push_back({1916.0f, 745.0f,    0.0f, 1916.0f});   // suelo, lado derecho
+    puntos.push_back({  40.0f, 175.0f,    0.0f,  478.0f});   // balcon izquierdo
+    puntos.push_back({1876.0f, 175.0f, 1437.0f, 1916.0f});   // balcon derecho
 }
 
 void Nivel2::iniciar()
 {
-    rambo = new Rambo(anchoNivel * 0.1f, ySuelo, 100, 30, 200.0f);
+    rambo = new Rambo(anchoNivel * 0.1f, ySuelo, 100, 30, 300.0f);
     rambo->setSuelo(ySuelo);
     rambo->setModeloSalto(&modeloSalto);
+    rambo->setVelocidadSalto(640.0f);
     agregarEntidad(rambo);
-    protegerDeLimpieza(rambo);
 
     // el arma cuelga arriba al centro apuntando hacia abajo (pi/2)
     arma = new ArmaOscilante(anchoNivel * 0.5f, 60.0f, 1.5708f, 300.0f, 10, &oscilador, &modeloBomba);
     agregarEntidad(arma);
+    protegerDeLimpieza(rambo);
 
     numeroHorda = 1;
     victoria = false;
@@ -63,6 +93,8 @@ void Nivel2::actualizar(float dt)
     }
 
     actualizarHorda(dt);
+    rambo->topeTecho(0, ALTO_CUERPO);
+    resolverPlataformas(dt);
     resolverColisiones();
 
     // rambo no se borra de memoria hasta destruir el nivel, por eso es seguro preguntar
@@ -93,7 +125,7 @@ void Nivel2::iniciarHorda()
 {
     const ConfigHorda &cfg = hordas[numeroHorda - 1];
     tiempoHorda = cfg.duracion;
-    tiempoSpawn = cfg.intervaloSpawn;   // el primer policia aparece enseguida
+    tiempoSpawn = cfg.intervaloSpawn / factorDificultad;   // el primer policia aparece enseguida
     generando = true;
 }
 
@@ -111,8 +143,11 @@ void Nivel2::actualizarHorda(float dt)
         return;
     }
 
+    float intervalo = cfg.intervaloSpawn / factorDificultad;
+    int maximo = static_cast<int>(cfg.maxEnPantalla * factorDificultad + 0.5f);
+
     tiempoSpawn += dt;
-    if (tiempoSpawn >= cfg.intervaloSpawn && contarPolicias() < cfg.maxEnPantalla)
+    if (tiempoSpawn >= intervalo && contarPolicias() < maximo)
     {
         generarPolicia();
         tiempoSpawn = 0.0f;
@@ -135,13 +170,29 @@ int Nivel2::contarPolicias() const
 
 void Nivel2::generarPolicia()
 {
-    const ConfigHorda &cfg = hordas[numeroHorda - 1];
-    float px = ladoSpawn ? anchoNivel : 0.0f;
-    ladoSpawn = !ladoSpawn;
+    const ConfigHorda &cfg = hordas.at(numeroHorda - 1);
+    const PuntoAparicion &pt = puntos[std::rand() % puntos.size()];
+    bool granadero = (std::rand() % 2 == 0);
+    float f = factorDificultad;
+    int salud = static_cast<int>(cfg.saludPolicia * f);
+    float velocidad = cfg.velocidadPolicia * (1.0f + (f - 1.0f) * 0.5f);   // la velocidad sube menos
 
-    Policia *p = new Policia(px, ySuelo, cfg.saludPolicia, cfg.velocidadPolicia,
-                             rambo, this, &modeloBomba);
-    p->setParametrosAtaque(600.0f, cfg.intervaloAtaque, 250.0f, 300.0f, 15);
+    Policia *p = new Policia(pt.x, pt.y, salud, velocidad, rambo, this, &modeloBomba);
+    p->setLimites(pt.izq, pt.der);
+    p->setModelos(&modeloBala, &reboteGranada);
+    p->setGravedadGranada(modeloBomba.getGravedad());
+
+    float intervaloAtaque = cfg.intervaloAtaque / f;
+    if (granadero)
+    {
+        p->setTipo(TipoPolicia::Granadero);
+        p->setParametrosAtaque(600.0f, intervaloAtaque * 1.5f, 400.0f, 300.0f, static_cast<int>(25 * f));
+    }
+    else
+    {
+        p->setTipo(TipoPolicia::Fusilero);
+        p->setParametrosAtaque(500.0f, intervaloAtaque * 0.5f, 500.0f, 0.0f, static_cast<int>(8 * f));
+    }
     agregarEntidad(p);
 }
 
@@ -149,9 +200,9 @@ void Nivel2::soltarSuministro(float px, float py)
 {
     if (std::rand() % 100 >= probSuministro) return;
 
-    TipoSuministro tipo = (std::rand() % 3 == 0) ? TipoSuministro::Energia
+    TipoSuministro tipo = (std::rand() % 2 == 0) ? TipoSuministro::Energia
                                                  : TipoSuministro::Municion;
-    int cantidad = (tipo == TipoSuministro::Energia) ? 50 : 25;
+    int cantidad = (tipo == TipoSuministro::Energia) ? static_cast<int>(22.0f / factorDificultad) : 25;
     agregarEntidad(new Suministro(px, py, tipo, cantidad));
 }
 
@@ -167,23 +218,40 @@ void Nivel2::resolverColisiones()
         Proyectil *p = dynamic_cast<Proyectil*>(e);
         if (p != nullptr)
         {
+            Granada *g = dynamic_cast<Granada*>(e);
+            if (g != nullptr)
+            {
+                // la granada solo hace dano al explotar, y explota al tocar el suelo o una base
+                if (g->estaExplotando())
+                {
+                    if (g->consumirExplosion() && alcanzaExplosion(*g, *rambo))
+                        rambo->recibirDano(g->getDano());
+                }
+                else if (g->getVelocidadY() > 0.0f && g->getY() >= superficieBajo(g->getX(), g->getY()))
+                {
+                    g->golpearSuelo();
+                }
+                continue;
+            }
+
             if (p->esDeRambo())
             {
-                // las balas de rambo dañan a los policias
+                // las balas de rambo danan a los policias
                 for (std::size_t j = 0; j < cantidad && p->estaViva(); ++j)
                 {
                     Policia *pol = dynamic_cast<Policia*>(entidades[j]);
                     if (pol == nullptr || !pol->estaViva()) continue;
-                    if (cerca(*p, *pol)) {
+                    if (golpea(*p, *pol))
+                    {
                         pol->recibirDano(p->getDano());
                         p->recibirDano(1);
                         if (!pol->estaViva()) soltarSuministro(pol->getX(), pol->getY());
                     }
                 }
             }
-            else if (cerca(*p, *rambo))
+            else if (golpea(*p, *rambo))
             {
-                // bombas y disparos del arma dañan a rambo
+                // los disparos de los fusileros y del arma fija danan a rambo
                 rambo->recibirDano(p->getDano());
                 p->recibirDano(1);
             }
@@ -198,7 +266,7 @@ void Nivel2::resolverColisiones()
         }
 
         Suministro *s = dynamic_cast<Suministro*>(e);
-        if (s != nullptr && cerca(*s, *rambo))
+        if (s != nullptr && golpea(*s, *rambo))
             rambo->recogerSuministro(*s);
     }
 }
@@ -226,7 +294,7 @@ void Nivel2::dispararRambo(float dir)
     if (rambo == nullptr || !rambo->estaViva()) return;
     if (!rambo->disparar()) return;
 
-    Proyectil *bala = new Proyectil(rambo->getX(), rambo->getY() - 30.0f, dir * 600.0f, 0.0f,
+    Proyectil *bala = new Proyectil(rambo->getX() + dir * 45.0f, rambo->getY() - 75.0f, dir * 700.0f, 0.0f,
                                     10, &modeloBala, &reboteBala, 1);
     bala->setDeRambo(true);
     agregarEntidad(bala);
@@ -236,4 +304,67 @@ Rambo *Nivel2::getRambo() const { return rambo; }
 int Nivel2::getNumeroHorda() const { return numeroHorda; }
 float Nivel2::getAncho() const { return anchoNivel; }
 float Nivel2::getAlto() const { return altoNivel; }
-float Nivel2::getYSuelo() const { return ySuelo; }
+float Nivel2::getYSuelo() const { return ySuelo; }
+
+// altura de la superficie mas alta que queda debajo (o a los pies) del punto, suelo incluido
+float Nivel2::superficieBajo(float px, float py) const
+{
+    float superficie = ySuelo;
+    for (const Plataforma &pl : plataformas)
+    {
+        if (px >= pl.x0 && px <= pl.x1 && pl.y >= py - 4.0f && pl.y < superficie)
+            superficie = pl.y;
+    }
+    return superficie;
+}
+
+// rambo aterriza en las plataformas desde arriba y las atraviesa al subir,
+// los policias caen por gravedad hasta la base que tengan debajo
+void Nivel2::resolverPlataformas(float dt)
+{
+    float suelo = superficieBajo(rambo->getX(), rambo->getY());
+    rambo->setSuelo(suelo);
+
+    // si estaba parado y ya no hay apoyo debajo, empieza a caer
+    if (rambo->estaEnSuelo() && rambo->getY() < suelo - 1.0f)
+        rambo->soltarSuelo();
+
+    for (entidad *e : entidades)
+    {
+        Policia *pol = dynamic_cast<Policia*>(e);
+        if (pol == nullptr || !pol->estaViva()) continue;
+
+        float superficie = superficieBajo(pol->getX(), pol->getY());
+        pol->caer(dt, superficie);
+
+        // al apoyarse en una base, sus limites pasan a ser los de esa base
+        if (pol->getY() >= superficie - 0.5f)
+        {
+            float izq, der;
+            limitesDeBase(pol->getX(), superficie, izq, der);
+            pol->setLimites(izq, der);
+        }
+    }
+}
+
+// extremos de la base en la que esta parado un policia, el suelo ocupa todo el ancho
+void Nivel2::limitesDeBase(float px, float superficie, float &izq, float &der) const
+{
+    izq = 0.0f;
+    der = anchoNivel;
+    for (const Plataforma &pl : plataformas)
+    {
+        if (px >= pl.x0 && px <= pl.x1 && std::fabs(pl.y - superficie) < 0.5f)
+        {
+            izq = pl.x0;
+            der = pl.x1;
+        }
+    }
+}
+const std::vector<Plataforma> &Nivel2::getPlataformas() const { return plataformas; }
+
+void Nivel2::setDificultad(float factor)
+{
+    factorDificultad = factor;
+    intervaloArma = 2.0f / factor;
+}

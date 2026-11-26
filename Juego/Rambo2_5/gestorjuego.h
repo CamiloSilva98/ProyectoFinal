@@ -11,6 +11,11 @@
 #include <QTimer>
 #include "nivel1.h"
 #include "nivel2.h"
+#include <QHash>
+#include <QVector4D>
+#include <QVector>
+#include "entidad.h"
+
 
 const int ANCHO_ESCENA = 1280;
 const int ALTO_ESCENA = 720;
@@ -63,6 +68,18 @@ private:
     QPixmap spriteAlerta;
     QPixmap spriteDuda;
     QPixmap cuerposGuardia[2];
+    QPixmap spriteMunicion;
+    QPixmap spriteTorreta;
+    QPixmap spriteFusilero;
+    QPixmap spriteGranada, spriteExplosion, spriteBalaTorreta;
+
+    QVector<QPixmap> cuadrosCorrer, cuadrosLanzar, cuadrosMuerte;
+    QVector<QPixmap> cargarCuadros(const QString &prefijo, int cantidad);
+    void agregarImagen(const QPixmap &imagen, float escala, bool espejo, float x, float y);
+
+    QList<QVector4D> muertes;                           // x, y, tiempo, espejo
+    QHash<const entidad*, QVector4D> ultimosPolicias;   // x, y, mira a la derecha
+
     float direccion;
     float tiempoAnim;
     float tiempoHerido;
@@ -72,6 +89,7 @@ private:
     float animGuardias;
     float tiempoApuntando;
     float anguloRambo;
+    float camX;
 
     void actualizar();
     void actualizarNivel1();
@@ -95,6 +113,11 @@ private:
     void dibujarNivel1();
     void dibujarNivel2();
     int cuadroRambo() const;
+    void activarCamara();
+    void seguirConCamara();
+    void restablecerCamara();
+    void agregarCuadro(const QPixmap &tira, int cuadro, int cuadros,
+                       float escala, bool espejo, float x, float y);
 };
 
 #endif // GESTORJUEGO_H

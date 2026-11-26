@@ -29,9 +29,14 @@ void ArmaOscilante::actualizarAngulo(float dt)
 // crea el proyectil con la direccion actual del arma
 Proyectil *ArmaOscilante::disparar()
 {
+    static const float LARGO_CANON = 37.0f;   // del pivote a la punta, en px de pantalla
+    float puntaX = x + LARGO_CANON * std::cos(anguloActual);
+    float puntaY = y + LARGO_CANON * std::sin(anguloActual);
     float vx = velocidadProyectil * std::cos(anguloActual);
     float vy = velocidadProyectil * std::sin(anguloActual);
-    return new Proyectil(x, y, vx, vy, danoProyectil, modeloProyectil, rebote, 1);
+    Proyectil *p = new Proyectil(puntaX, puntaY, vx, vy, danoProyectil, modeloProyectil, rebote, 1);
+    p->setDeTorreta(true);
+    return p;
 }
 
-float ArmaOscilante::getAngulo() const { return anguloActual; }
+float ArmaOscilante::getAngulo() const { return anguloActual; }

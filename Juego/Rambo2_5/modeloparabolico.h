@@ -11,6 +11,8 @@ private:
 public:
     ModeloParabolico(float g) : g(g) {}
 
+    float getGravedad() const { return g; }
+
     // version por pasos para el ciclo del juego
     void calcularMovimiento(float &x, float &y, float &vx, float &vy, float dt) override
     {
@@ -27,4 +29,4 @@ public:
     }
 };
 
-#endif
+#endif

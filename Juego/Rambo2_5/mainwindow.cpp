@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     gestor = new GestorJuego(escena, this);
 
-    QMenu *menuDificultad = menuBar()->addMenu("Dificultad (Nivel 1)");
+    QMenu *menuDificultad = menuBar()->addMenu("Dificultad");
     QActionGroup *grupo = new QActionGroup(this);
     const Dificultad opciones[3] = {Dificultad::Facil, Dificultad::Normal, Dificultad::Dificil};
     for (Dificultad opcion : opciones)
