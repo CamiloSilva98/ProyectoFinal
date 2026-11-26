@@ -3,6 +3,10 @@
         <file>recursos/sprites/rambo_sprites.png</file>
         <file>recursos/sprites/bala.png</file>
         <file>recursos/sprites/item.png</file>
+        <file>recursos/sprites/fondo_menu.png</file>
+        <file>recursos/sprites/cine_1_cuarto.png</file>
+        <file>recursos/sprites/cine_2_cinta.png</file>
+        <file>recursos/sprites/cine_3_arco.png</file>
         <file>recursos/sprites/fondo_nivel1.png</file>
         <file>recursos/sprites/carro_campero.png</file>
         <file>recursos/sprites/carro_sedan.png</file>

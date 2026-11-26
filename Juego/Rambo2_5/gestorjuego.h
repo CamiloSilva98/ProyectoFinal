@@ -20,7 +20,16 @@
 const int ANCHO_ESCENA = 1280;
 const int ALTO_ESCENA = 720;
 
-enum class Pantalla { Menu, JugandoNivel1, JugandoNivel2, Nivel1Completado, Derrota, FinJuego };
+enum class Pantalla { Cinematica, Menu, JugandoNivel1, JugandoNivel2, Nivel1Completado, Derrota, FinJuego };
+
+enum class FaseCinematica { Dialogo, Negro, Destello };
+
+struct LineaCinematica
+{
+    int imagen;
+    QString quien;
+    QString texto;
+};
 
 class GestorJuego : public QObject
 {
@@ -52,11 +61,19 @@ private:
 
     QSet<int> teclas;
     QList<QGraphicsItem*> movibles;
+    QRectF botonNivel1;
+    QRectF botonNivel2;
     QGraphicsSimpleTextItem *hud;
 
     QPixmap spritesRambo;
     QPixmap spriteEnergia;
     QPixmap spriteBala;
+    QPixmap fondoMenu;
+    QPixmap imagenesCine[3];
+    QList<LineaCinematica> guionCine;
+    FaseCinematica faseCine;
+    int lineaCine;
+    float tiempoCine;
     QPixmap fondoNivel1;
     QPixmap spriteCarroCampero;
     QPixmap spriteCarroSedan;
@@ -94,7 +111,14 @@ private:
     void actualizar();
     void actualizarNivel1();
     void actualizarNivel2();
+    void actualizarCinematica();
 
+    void iniciarCinematica();
+    void pasarCinematica();
+    void avanzarCinematica();
+    void dibujarDialogo();
+    void dibujarNegro();
+    void dibujarDestello();
     void mostrarMenu();
     void iniciarNivel1();
     void iniciarNivel2();
@@ -107,6 +131,7 @@ private:
     QGraphicsItem *agregarMovil(QGraphicsItem *item, float x, float y);
     QGraphicsPixmapItem *crearImagen(const QPixmap &imagen);
     void agregarTexto(const QString &texto, float y, int tamano, const QColor &color);
+    void agregarCaja(const QRectF &caja, const QString &texto, int tamano, const QColor &color);
     void crearHud();
 
     void dibujarMapaNivel1();
